@@ -80,7 +80,7 @@ ForecastIQ/
 ├── sql/                  # DDL schema, analytical views, analysis queries
 ├── src/forecastiq/       # installable Python package
 │   ├── etl/              # extract, clean, validate, transform, load
-│   ├── forecasting/      # preprocess, models, evaluate, pipeline
+│   ├── forecasting/      # data, features, models, trainer, evaluator, predictor, visualizations
 │   ├── analytics/        # KPIs, trends, RFM, products, regional, returns, insights
 │   ├── api/              # FastAPI app (optional)
 │   └── utils/            # logging, IO, config loader
@@ -143,12 +143,12 @@ Detailed setup: [`docs/installation.md`](docs/installation.md).
 
 ## 📊 Modeling Approach
 
-1. Aggregate the fact table to a **monthly (and quarterly) revenue/quantity time series** per series (total, category, region).
-2. Split into **train / hold-out** windows for honest backtesting.
-3. Fit competing models: **ARIMA, SARIMA, Linear Regression, Random Forest** (Prophet/XGBoost optional).
-4. Score each on the hold-out with **RMSE, MAE, MAPE, R²**.
-5. **Automatically select the best model** per series and generate the forward forecast with confidence intervals.
-6. Persist forecasts + metrics back to SQL for the dashboard.
+1. Aggregate the fact table to a **monthly (or quarterly) time series** per series (total, category, region).
+2. Engineer features: **trend, cyclical seasonality, lags, rolling/moving averages**.
+3. Fit competing models: **Naive, Moving Average, Linear Regression, ARIMA, SARIMA** (Prophet optional).
+4. **Rolling-origin backtest** each model; score with **RMSE, MAE, MAPE, R²**.
+5. **Automatically select the best model** per series, refit on full history, forecast with prediction intervals.
+6. Persist forecasts + metrics back to SQL and render diagnostic figures.
 
 Details & assumptions: [`docs/forecasting.md`](docs/forecasting.md).
 
@@ -159,10 +159,10 @@ Details & assumptions: [`docs/forecasting.md`](docs/forecasting.md).
 - [x] Architecture, repository structure, and database schema
 - [x] ETL pipeline (Excel: Orders/People/Returns → validated star schema)
 - [x] Analytics layer (KPIs, trends, RFM, products, regional, returns, insights) + EDA notebook
-- [ ] Forecasting pipeline + model comparison
+- [x] Forecasting engine (5 models, rolling-origin backtest, auto model selection, persisted forecasts)
 - [ ] FastAPI service (optional)
 - [ ] Power BI dashboard + DAX measures
-- [x] Unit tests (33 passing) &nbsp;·&nbsp; [ ] CI
+- [x] Unit tests (55 passing) &nbsp;·&nbsp; [ ] CI
 
 Full plan: [`docs/roadmap.md`](docs/roadmap.md).
 

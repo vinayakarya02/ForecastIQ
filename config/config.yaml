@@ -80,19 +80,19 @@ forecasting:
   target: sales                       # forecast revenue; switch to `quantity` for demand units
   granularity: monthly                # monthly | quarterly
   horizon: 6                          # periods to forecast ahead
-  holdout_periods: 6                  # backtest window for model selection
-  series:                             # which aggregations to forecast
+  seasonal_period: 12                 # 12 for monthly, 4 for quarterly
+  backtest_folds: 3                   # rolling-origin folds; each fold forecasts `horizon`
+  selection_metric: mape              # rmse | mae | mape | r2
+  series:                             # aggregations to forecast in the pipeline
     - total
     - by_category
-    - by_region
-  selection_metric: mape              # rmse | mae | mape | r2
   models:
-    arima:      { enabled: true,  order: [1, 1, 1] }
-    sarima:     { enabled: true,  order: [1, 1, 1], seasonal_order: [1, 1, 1, 12] }
-    linreg:     { enabled: true }
-    randomforest: { enabled: true, n_estimators: 300, max_depth: 8 }
-    prophet:    { enabled: false }    # requires `pip install prophet`
-    xgboost:    { enabled: false }    # requires `pip install xgboost`
+    naive:             { enabled: true }
+    moving_average:    { enabled: true, window: 3 }
+    linear_regression: { enabled: true, lags: [1, 12], roll_windows: [3] }
+    arima:             { enabled: true, order: [1, 1, 1] }
+    sarima:            { enabled: true, order: [1, 1, 1], seasonal_order: [1, 1, 1, 12] }
+    prophet:           { enabled: false }   # optional; requires `pip install prophet`
 
 logging:
   level: INFO

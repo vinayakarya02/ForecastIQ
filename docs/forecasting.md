@@ -1,67 +1,94 @@
-# ForecastIQ — Forecasting Pipeline
+# ForecastIQ — Forecasting Engine
 
 Entry point: `python pipelines/run_forecast.py --granularity monthly --horizon 6`
 Config: `config/config.yaml` → `forecasting:` block.
 
-## Problem framing
-Forecast a business measure (**revenue** by default, or **quantity**) forward `horizon` periods for one or more
-**series**: overall total, per category, per region. Each series is an independent univariate time-series problem.
+The engine forecasts a business measure (revenue by default) forward `horizon` periods for one or more
+**series** (total, per category, per region/market). Each series is an independent univariate problem:
+build the series → backtest every model → select the best out-of-sample → refit on all history → forecast →
+persist. It is designed to read like a commercial forecasting tool: explainable models, honest backtesting,
+automatic-but-transparent selection.
+
+## Architecture
 
 ```mermaid
 flowchart TB
-    A[(warehouse)] --> B[build series<br/>monthly/quarterly aggregation]
-    B --> C[train / hold-out split]
-    C --> D[fit candidate models]
-    D --> E[score on hold-out<br/>RMSE MAE MAPE R2]
-    E --> F[select best per series]
-    F --> G[refit on full history]
-    G --> H[forecast horizon + intervals]
-    H --> I[(write forecast_results<br/>+ model_metrics)]
+    A[(warehouse)] --> B[data.py<br/>aggregate to monthly/quarterly series]
+    B --> C[features.py<br/>lags, rolling, trend, seasonality]
+    C --> D[models.py<br/>Naive · MA · LinReg · ARIMA · SARIMA]
+    D --> E[trainer.py<br/>rolling-origin backtest]
+    E --> F[evaluator.py<br/>RMSE · MAE · MAPE · R2]
+    F --> G[predictor.py<br/>select best · refit · forecast · persist]
+    G --> H[(forecast_results<br/>+ model_metrics)]
+    G --> I[visualizations.py<br/>actual-vs-forecast · residuals · comparison]
 ```
 
-## Series construction (`forecasting/preprocess.py`)
-- Aggregate `fact_sales` to the chosen `granularity` using the `vw_monthly_sales` logic.
-- Produce a continuous, gap-filled `DatetimeIndex` (missing periods → 0 or interpolated, logged).
-- Build supervised features for ML models: lags (`t-1`, `t-12`), rolling mean, cyclical month encodings.
+| Module | Responsibility |
+|--------|----------------|
+| `data.py` | build gap-filled monthly/quarterly series for total/category/region/market/product |
+| `features.py` | trend, cyclical seasonality, lag and rolling/moving-average features |
+| `models.py` | five forecasters behind one `fit`/`forecast` contract + a model factory |
+| `evaluator.py` | RMSE, MAE, MAPE, R² and best-model selection |
+| `trainer.py` | rolling-origin backtesting, pooling out-of-sample predictions |
+| `predictor.py` | refit winner on full history, forecast with intervals, persist to warehouse |
+| `visualizations.py` | actual-vs-forecast, residual analysis, model & forecast comparison |
 
-## Candidate models (`forecasting/models.py`)
-| Model | Library | Captures | Notes |
-|-------|---------|----------|-------|
-| ARIMA | statsmodels | trend, autocorrelation | baseline classical model |
-| SARIMA | statsmodels | trend + **seasonality** | `seasonal_order` with period 12 (monthly) |
-| Linear Regression | scikit-learn | linear trend + calendar effects | on engineered features |
-| Random Forest | scikit-learn | non-linear feature interactions | robust, few assumptions |
-| Prophet *(optional)* | prophet | trend + seasonality + holidays | enable in config |
-| XGBoost *(optional)* | xgboost | gradient-boosted interactions | enable in config |
+## Models — why each exists and what it assumes
 
-All models share a common `fit(series) → forecast(horizon)` interface so adding one is a small, isolated change.
+| Model | Why it's here | Key assumptions |
+|-------|---------------|-----------------|
+| **Naive** | last-value baseline; every model must beat it to justify itself | next value ≈ current value (random walk) |
+| **MovingAverage** | smooths noise; strong when the series is roughly flat | recent mean is a good predictor; no trend/seasonality |
+| **LinearRegression** | explainable trend + seasonality + lags; inspectable coefficients | effects are additive/linear in the engineered features |
+| **ARIMA(1,1,1)** | captures autocorrelation & non-seasonal structure via differencing | series is (difference-)stationary; no seasonality |
+| **SARIMA(1,1,1)(1,1,1,12)** | ARIMA + explicit annual seasonality — fits retail's yearly cycle | stationary after seasonal + regular differencing; stable (enforced) |
+| **Prophet** *(optional, off)* | additive trend/seasonality/holidays, robust to gaps | additive components; needs the `prophet` dependency |
 
-## Backtesting & selection (`forecasting/pipeline.py`)
-1. Hold out the last `holdout_periods` observations.
-2. Fit each enabled model on the training portion.
-3. Predict the hold-out and compute metrics.
-4. Select the model with the best `selection_metric` (default **MAPE**).
-5. Refit the winner on the **full** history and forecast `horizon` periods ahead with confidence intervals.
+**Prediction intervals.** ARIMA/SARIMA use statsmodels' analytic 95% intervals. Naive and the recursive
+LinearRegression widen an empirical residual-σ band with the square root of the horizon (uncertainty
+compounds as forecasts feed their own lags); MovingAverage uses a flat residual-σ band. Intervals are
+approximate, not guarantees.
 
-> Honest evaluation: models never see the hold-out during fitting, so reported accuracy reflects true
-> out-of-sample performance rather than in-sample overfitting.
+## Backtesting — rolling-origin, not a single split
+A single train/test split can flatter or unfairly punish a model by luck of the cut-off. Instead the trainer
+runs **rolling-origin cross-validation**: fit on history up to a cut-off, forecast the next `horizon`
+periods, step the cut-off forward by `horizon`, repeat for `backtest_folds` folds. Predictions are pooled
+across folds and scored once. A model that errors on *any* fold (or emits a non-finite forecast) is excluded,
+so every model is judged on the same folds.
 
-## Metrics (`forecasting/evaluate.py`)
-| Metric | Formula (intuition) | Why it's here |
-|--------|--------------------|---------------|
-| RMSE | √mean((y−ŷ)²) | penalizes large misses |
-| MAE | mean(|y−ŷ|) | robust, same units as target |
-| MAPE | mean(|y−ŷ|/|y|)·100 | scale-free % error, easy for stakeholders |
-| R² | 1 − SS_res/SS_tot | variance explained |
+## Selection — why a given model wins
+The model with the best `selection_metric` (default **MAPE** — scale-free and stakeholder-friendly) on the
+pooled out-of-sample predictions is chosen, refit on the **full** history, and used for the forward forecast.
+Selection is fully data-driven and reproducible; `model_metrics` records every model's score with `is_best`
+marking the winner.
 
-## Outputs
-- `forecast_results`: history (`is_actual=1`) + forward forecast (`is_actual=0`) with `yhat_lower/upper`.
-- `model_metrics`: every model's scores per series, with `is_best=1` on the winner.
-- `reports/forecasts/*.csv` and `reports/figures/*.png` for sharing outside Power BI.
+### Result on Global Superstore (monthly revenue, 3 folds × 6 months)
+| Series | Winner | MAPE | R² |
+|--------|--------|------|-----|
+| total | LinearRegression | 13.7% | 0.70 |
+| category: Furniture | **SARIMA** | 12.6% | 0.79 |
+| category: Office Supplies | LinearRegression | 13.1% | 0.68 |
+| category: Technology | LinearRegression | 20.6% | 0.36 |
+
+The two seasonality-aware models (LinearRegression, SARIMA) clearly beat the flat baselines (Naive/MA/ARIMA
+≈ 32–35% MAPE). Different series pick different winners — Furniture's strong yearly cycle favours SARIMA,
+while the regression's explicit trend+seasonal features generalise best elsewhere.
+
+> **Engineering note (defensible):** SARIMA was initially configured with
+> `enforce_stationarity=False`, which allowed explosive non-stationary forecasts on the short 30-month
+> backtest windows (MAPE ~97%). Restoring statsmodels' stability constraints (the default `True`) bounded the
+> forecasts and made SARIMA competitive. On only four years of data a full seasonal ARIMA is near the edge of
+> its data budget; with more history it would likely lead more series.
+
+## Persistence
+- `forecast_results` — observed history (`is_actual=1`) + forward forecast (`is_actual=0`) with `yhat_lower/upper`.
+- `model_metrics` — RMSE/MAE/MAPE/R² for every model per series; `is_best=1` on the winner.
+- Each run clears prior output and writes a fresh `run_id`, so the dashboard always reflects the latest run.
+- CSV exports land in `reports/forecasts/`; figures in `reports/figures/`.
 
 ## Assumptions & limitations (interview-honest)
-- Monthly grain smooths daily noise but needs enough history (~24+ months) for stable seasonality.
-- Classical models assume the series is reasonably regular; structural breaks (e.g. a new market launch)
-  will degrade accuracy — surfaced by rising MAPE, not hidden.
-- Confidence intervals are model-derived (statsmodels) or empirical (ML residual quantiles), and are
-  approximate, not guarantees.
+- Monthly grain needs ~24+ months for stable seasonality; 48 months is workable but modest for SARIMA.
+- Missing months are gap-filled with 0 revenue before modelling (logged); a long zero-run would bias models.
+- Recursive ML forecasts compound error over the horizon — hence widening intervals.
+- Structural breaks (new market launches, price changes) are not modelled; they surface as rising MAPE rather
+  than being hidden.

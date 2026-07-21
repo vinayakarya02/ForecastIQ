@@ -28,13 +28,16 @@ Delivered in phases so each is independently demoable and interview-defendable.
 - [x] EDA notebook with charts (`notebooks/01_eda.ipynb`)
 - [x] Comprehensive analytics unit tests
 
-## Phase 3 — Forecasting
-- [ ] `preprocess` (series building + feature engineering)
-- [ ] `models` (ARIMA, SARIMA, LinReg, RandomForest)
-- [ ] `evaluate` (RMSE/MAE/MAPE/R²)
-- [ ] `pipeline` (backtest, select best, persist forecasts)
-- [ ] `run_forecast.py` CLI + forecasting notebook
-- [ ] Unit tests for metrics
+## Phase 3 — Forecasting ✅
+- [x] `data.py` (monthly/quarterly series for total/category/region/market/product)
+- [x] `features.py` (trend, seasonality, lags, rolling/moving averages)
+- [x] `models.py` (Naive, MovingAverage, LinearRegression, ARIMA, SARIMA, optional Prophet)
+- [x] `evaluator.py` (RMSE/MAE/MAPE/R² + best-model selection)
+- [x] `trainer.py` (rolling-origin backtesting)
+- [x] `predictor.py` (refit winner, forecast with intervals, persist to warehouse)
+- [x] `visualizations.py` (actual-vs-forecast, residuals, model & forecast comparison)
+- [x] `pipelines/run_forecast.py` CLI + CSV/figure exports
+- [x] Comprehensive forecasting unit tests
 
 ## Phase 4 — Presentation
 - [ ] FastAPI service (`/kpis`, `/forecast`, …)

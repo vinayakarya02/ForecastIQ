@@ -1,11 +1,12 @@
 """Shared pytest fixtures for ForecastIQ tests."""
+import numpy as np
 import pandas as pd
 import pytest
 
 from forecastiq.config import Config
 from forecastiq.etl.transform import transform
 from forecastiq.etl.load import load
-from forecastiq.utils.io import get_engine
+from forecastiq.utils.io import get_engine, run_sql_script
 
 
 @pytest.fixture
@@ -77,6 +78,39 @@ def warehouse(rich_frame, cfg, tmp_path):
     engine = get_engine(f"sqlite:///{(tmp_path / 'warehouse.db').as_posix()}")
     load(tables, cfg, engine=engine)
     return engine
+
+
+@pytest.fixture
+def synth_series():
+    """A deterministic 48-month series with linear trend + annual seasonality."""
+    idx = pd.date_range("2011-01-01", periods=48, freq="MS")
+    t = np.arange(48)
+    seasonal = 1 + 0.3 * np.sin(2 * np.pi * (idx.month - 1) / 12)
+    return pd.Series((1000 + 20 * t) * seasonal, index=idx, name="sales")
+
+
+@pytest.fixture
+def schema_engine(cfg, tmp_path):
+    """Temp SQLite DB with the full (empty) schema — for persistence tests."""
+    engine = get_engine(f"sqlite:///{(tmp_path / 'fc.db').as_posix()}")
+    run_sql_script(engine, cfg.root / "sql" / "schema.sql")
+    return engine
+
+
+@pytest.fixture
+def all_model_factories():
+    """All five forecasters wired up (period 12)."""
+    from forecastiq.forecasting import models
+    return models.build_model_factories(
+        {
+            "naive": {"enabled": True},
+            "moving_average": {"enabled": True, "window": 3},
+            "linear_regression": {"enabled": True, "lags": [1, 12], "roll_windows": [3]},
+            "arima": {"enabled": True, "order": [1, 1, 1]},
+            "sarima": {"enabled": True, "order": [1, 1, 1], "seasonal_order": [1, 1, 1, 12]},
+        },
+        period=12,
+    )
 
 
 @pytest.fixture
