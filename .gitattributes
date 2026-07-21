@@ -1,0 +1,11 @@
+# Normalize line endings to LF in the repository; check out native on each OS.
+* text=auto
+
+# Treat binary assets as binary (no line-ending or diff munging).
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.xls  binary
+*.xlsx binary
+*.db   binary
+*.sqlite binary

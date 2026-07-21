@@ -1,0 +1,98 @@
+# ForecastIQ configuration
+# Central place for paths, ETL rules, and model settings so code stays parameter-free.
+
+project:
+  name: ForecastIQ
+  random_seed: 42
+
+# ---- Data source ----
+# type=excel reads a multi-sheet workbook; type=csv reads paths.raw_csv.
+source:
+  type: excel
+  path: "data/raw/Global Superstore.xls"
+  orders_sheet: Orders          # primary fact dataset
+  people_sheet: People          # region -> manager mapping (adds region_manager)
+  returns_sheet: Returns        # (order_id, market) that were returned (adds is_returned)
+  # Reconcile label differences between the Orders and People sheets.
+  # Known Global Superstore quirk: Orders uses "EMEA", People uses "AMEA" (same manager).
+  region_aliases:
+    EMEA: AMEA
+  # Returns sheet labels the US market "United States"; Orders labels it "US".
+  # Applied to the Returns market before the (order_id, market) join so US returns match.
+  market_aliases:
+    United States: US
+
+paths:
+  raw_csv: data/raw/global_superstore.csv
+  interim_dir: data/interim
+  processed_dir: data/processed
+  reports_dir: reports
+  figures_dir: reports/figures
+  forecasts_dir: reports/forecasts
+
+database:
+  # Overridden by FORECASTIQ_DB_URL env var if present.
+  url: sqlite:///forecastiq.db
+  echo: false
+
+# ---- ETL / data-quality rules ----
+etl:
+  # Source column -> canonical snake_case name. Keeps the pipeline dataset-agnostic:
+  # to onboard a new dataset, only edit this mapping.
+  column_map:
+    "Order ID": order_id
+    "Order Date": order_date
+    "Ship Date": ship_date
+    "Ship Mode": ship_mode
+    "Customer ID": customer_id
+    "Customer Name": customer_name
+    "Segment": segment
+    "City": city
+    "State": state
+    "Country": country
+    "Market": market
+    "Region": region
+    "Product ID": product_id
+    "Category": category
+    "Sub-Category": sub_category
+    "Product Name": product_name
+    "Sales": sales
+    "Quantity": quantity
+    "Discount": discount
+    "Profit": profit
+    "Shipping Cost": shipping_cost
+    "Order Priority": order_priority
+
+  date_columns: [order_date, ship_date]
+  # dayfirst=false for the Kaggle Global Superstore file (MM/DD/YYYY).
+  dayfirst: false
+
+  validation:
+    required_columns: [order_id, order_date, customer_id, product_id, sales, quantity]
+    non_negative_columns: [sales, quantity, shipping_cost]
+    # discount is a fraction; profit may legitimately be negative.
+    discount_range: [0.0, 1.0]
+    max_null_fraction: 0.05          # fail a column if >5% null after cleaning
+    drop_exact_duplicates: true
+
+# ---- Forecasting ----
+forecasting:
+  target: sales                       # forecast revenue; switch to `quantity` for demand units
+  granularity: monthly                # monthly | quarterly
+  horizon: 6                          # periods to forecast ahead
+  holdout_periods: 6                  # backtest window for model selection
+  series:                             # which aggregations to forecast
+    - total
+    - by_category
+    - by_region
+  selection_metric: mape              # rmse | mae | mape | r2
+  models:
+    arima:      { enabled: true,  order: [1, 1, 1] }
+    sarima:     { enabled: true,  order: [1, 1, 1], seasonal_order: [1, 1, 1, 12] }
+    linreg:     { enabled: true }
+    randomforest: { enabled: true, n_estimators: 300, max_depth: 8 }
+    prophet:    { enabled: false }    # requires `pip install prophet`
+    xgboost:    { enabled: false }    # requires `pip install xgboost`
+
+logging:
+  level: INFO

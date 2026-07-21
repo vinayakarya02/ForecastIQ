@@ -1,0 +1,40 @@
+# ---- Data (do not commit datasets or generated warehouse) ----
+data/raw/*
+data/interim/*
+data/processed/*
+data/external/*
+!data/**/.gitkeep
+*.db
+*.sqlite
+*.sqlite3
+
+# ---- Generated reports ----
+reports/figures/*
+reports/forecasts/*
+reports/analytics/*
+!reports/**/.gitkeep
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# ---- Environments ----
+.venv/
+venv/
+env/
+.env
+
+# ---- Editors / OS ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ---- Power BI temp ----
+*.pbix.tmp
