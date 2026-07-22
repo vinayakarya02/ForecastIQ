@@ -26,7 +26,7 @@ Delivered in phases so each is independently demoable and interview-defendable.
 - [x] `insights.py` (rule-based, data-derived business insights)
 - [x] `pipelines/run_analytics.py` + CSV/insight exports
 - [x] EDA notebook with charts (`notebooks/01_eda.ipynb`)
-- [x] Comprehensive analytics unit tests
+- [x] Analytics unit tests
 
 ## Phase 3 — Forecasting ✅
 - [x] `data.py` (monthly/quarterly series for total/category/region/market/product)
@@ -37,7 +37,7 @@ Delivered in phases so each is independently demoable and interview-defendable.
 - [x] `predictor.py` (refit winner, forecast with intervals, persist to warehouse)
 - [x] `visualizations.py` (actual-vs-forecast, residuals, model & forecast comparison)
 - [x] `pipelines/run_forecast.py` CLI + CSV/figure exports
-- [x] Comprehensive forecasting unit tests
+- [x] Forecasting unit tests
 
 ## Phase 4 — Interactive platform ✅
 - [x] Streamlit multipage app (`app/app.py` + 10 pages)

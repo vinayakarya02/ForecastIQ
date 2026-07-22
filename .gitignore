@@ -30,19 +30,17 @@ venv/
 env/
 .env
 
-# ---- Editors / OS ----
+# ---- Editors / tooling / OS ----
 .vscode/
 .idea/
+.claude/
 .DS_Store
 Thumbs.db
 
 # ---- Power BI temp ----
 *.pbix.tmp
 
-# Claude Code tooling
-.claude/
-
-# ---- Explicit safety: datasets, generated CSVs, and secrets ----
+# ---- Datasets, generated CSVs, and secrets (never commit) ----
 *.xls
 *.xlsx
 *.csv

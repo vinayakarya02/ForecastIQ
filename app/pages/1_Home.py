@@ -114,7 +114,7 @@ nav = [
     ("pages/6_Regional_Analytics.py", "🌍 Regional Analytics", "Market → city & managers"),
     ("pages/7_Returns_Analytics.py", "↩️ Returns Analytics", "Return rate & returned value"),
     ("pages/8_Forecasting.py", "🔮 Forecasting", "Interactive demand forecasts"),
-    ("pages/9_Business_Insights.py", "💡 Business Insights", "Auto-generated observations"),
+    ("pages/9_Business_Insights.py", "💡 Business Insights", "Rule-based observations"),
     ("pages/10_Model_Performance.py", "🏁 Model Performance", "Compare every forecast model"),
 ]
 for row_start in range(0, len(nav), 3):

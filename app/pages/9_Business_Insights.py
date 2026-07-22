@@ -14,7 +14,11 @@ from utils.theme import apply_theme  # noqa: E402
 
 apply_theme()
 scope = current_scope()
-page_header("Business Insights", "Automatically generated from the warehouse — no hardcoding", "💡")
+page_header(
+    "Business Insights",
+    "Rule-based observations computed from the warehouse — no hardcoded numbers",
+    "💡",
+)
 scope_banner(scope)
 
 _ACCENT = {
