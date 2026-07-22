@@ -84,7 +84,8 @@ ForecastIQ/
 │   ├── analytics/        # KPIs, trends, RFM, products, regional, returns, insights
 │   ├── api/              # FastAPI app (optional)
 │   └── utils/            # logging, IO, config loader
-├── pipelines/            # runnable entrypoints (run_etl.py, run_forecast.py)
+├── app/                  # Streamlit platform (app.py, 10 pages, components, utils)
+├── pipelines/            # entrypoints (run_etl.py, run_analytics.py, run_forecast.py)
 ├── notebooks/            # EDA, ETL demo, forecasting walkthrough
 ├── powerbi/              # dashboard build guide + DAX measures
 ├── docs/                 # architecture, schema, data dictionary, roadmap
@@ -124,7 +125,8 @@ python pipelines/run_analytics.py        # exports to reports/analytics/
 # 7. Run the forecasting pipeline (train, compare, select best, persist)
 python pipelines/run_forecast.py --granularity monthly --horizon 6
 
-# 8. Connect Power BI to forecastiq.db (see powerbi/README.md)
+# 8. Launch the interactive platform
+streamlit run app/app.py                 # http://localhost:8501
 ```
 
 Detailed setup: [`docs/installation.md`](docs/installation.md).
@@ -135,7 +137,8 @@ Detailed setup: [`docs/installation.md`](docs/installation.md).
 
 **Language & Data:** Python 3.11, Pandas, NumPy, SQL (SQLite by default, PostgreSQL-ready)
 **Modeling:** statsmodels (ARIMA/SARIMA), scikit-learn (Linear Regression, Random Forest), Prophet & XGBoost *(optional extras)*
-**Visualization:** Power BI, Plotly, Matplotlib
+**Visualization:** Plotly, Matplotlib, Power BI
+**App:** Streamlit (multipage, cached, Plotly-powered)
 **Serving:** FastAPI + Uvicorn *(optional)*
 **Tooling:** pytest, Git, PyYAML, SQLAlchemy
 
@@ -154,15 +157,47 @@ Details & assumptions: [`docs/forecasting.md`](docs/forecasting.md).
 
 ---
 
+## 🖥️ Interactive Application
+
+A professional **Streamlit** platform sits on top of the warehouse and **reuses the analytics and
+forecasting engines unchanged**. Ten pages, global sidebar filters that scope every view, interactive
+Plotly charts, and CSV exports throughout.
+
+```bash
+streamlit run app/app.py        # http://localhost:8501
+```
+
+| Page | Shows |
+|------|-------|
+| 🏠 Home | overview, architecture, warehouse & forecast stats |
+| 📊 Executive Dashboard | headline KPIs, revenue & profit trends |
+| 📈 Sales Analytics | monthly/quarterly/yearly, growth, moving averages, breakdowns |
+| 👥 Customer Analytics | RFM segments, CLV distribution, repeat & top customers |
+| 📦 Product Analytics | category / sub-category / product performance, loss-makers |
+| 🌍 Regional Analytics | market → city, region managers, world choropleth |
+| ↩️ Returns Analytics | return rate, returned value, trends, hotspots |
+| 🔮 Forecasting | pick a series, run the engine, view forecast + intervals + metrics |
+| 💡 Business Insights | auto-generated rule-based observations |
+| 🏁 Model Performance | compare every model (RMSE / MAE / MAPE / R²) |
+
+**Global filters:** Year · Market · Region · Country · Category · Sub-category · Segment — every page
+updates dynamically. Architecture: [`docs/app_architecture.md`](docs/app_architecture.md) ·
+Deployment: [`docs/deployment.md`](docs/deployment.md).
+
+<p align="center"><img src="docs/images/forecast_example.png" width="72%" alt="ForecastIQ forecast example"></p>
+
+---
+
 ## 🗺️ Roadmap
 
 - [x] Architecture, repository structure, and database schema
 - [x] ETL pipeline (Excel: Orders/People/Returns → validated star schema)
 - [x] Analytics layer (KPIs, trends, RFM, products, regional, returns, insights) + EDA notebook
 - [x] Forecasting engine (5 models, rolling-origin backtest, auto model selection, persisted forecasts)
+- [x] Interactive Streamlit platform (10 pages, global filters, forecasting UI, exports)
 - [ ] FastAPI service (optional)
 - [ ] Power BI dashboard + DAX measures
-- [x] Unit tests (55 passing) &nbsp;·&nbsp; [ ] CI
+- [x] Unit tests (66 passing) &nbsp;·&nbsp; [ ] CI
 
 Full plan: [`docs/roadmap.md`](docs/roadmap.md).
 

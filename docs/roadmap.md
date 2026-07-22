@@ -39,10 +39,18 @@ Delivered in phases so each is independently demoable and interview-defendable.
 - [x] `pipelines/run_forecast.py` CLI + CSV/figure exports
 - [x] Comprehensive forecasting unit tests
 
-## Phase 4 — Presentation
+## Phase 4 — Interactive platform ✅
+- [x] Streamlit multipage app (`app/app.py` + 10 pages)
+- [x] Global sidebar filters via a scoped in-memory warehouse (analytics reused unchanged)
+- [x] Executive, Sales, Customer, Product, Regional, Returns pages (Plotly, exports)
+- [x] Interactive Forecasting page + Model Performance comparison
+- [x] Business Insights page (rule-based engine)
+- [x] Theme, components, caching; AppTest smoke tests for every page
+- [x] Deployment: Dockerfile, `.streamlit/config.toml`, deployment docs
+
+## Phase 4b — Optional presentation extras
 - [ ] FastAPI service (`/kpis`, `/forecast`, …)
 - [ ] Power BI report (4 pages) + DAX measures
-- [ ] Screenshots into `docs/images/`
 
 ## Phase 5 — Polish
 - [ ] GitHub Actions CI (lint + pytest)
