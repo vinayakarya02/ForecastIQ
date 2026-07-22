@@ -1,4 +1,5 @@
 """Tests for the forecasting models."""
+
 import numpy as np
 import pandas as pd
 
@@ -16,7 +17,7 @@ def test_naive(synth_series):
     fc = models.NaiveForecaster().fit(synth_series).forecast(3)
     _check_result(fc, 3)
     assert fc.yhat[0] == synth_series.iloc[-1]
-    assert fc.index[0] == pd.Timestamp("2015-01-01")   # month after 2014-12
+    assert fc.index[0] == pd.Timestamp("2015-01-01")  # month after 2014-12
 
 
 def test_moving_average(synth_series):
@@ -31,14 +32,17 @@ def test_linear_regression(synth_series):
 
 
 def test_arima_and_sarima(synth_series):
-    for model in (models.ARIMAForecaster((1, 1, 1)),
-                  models.SARIMAForecaster((1, 1, 1), (1, 1, 1, 12))):
+    for model in (
+        models.ARIMAForecaster((1, 1, 1)),
+        models.SARIMAForecaster((1, 1, 1), (1, 1, 1, 12)),
+    ):
         fc = model.fit(synth_series).forecast(4)
         _check_result(fc, 4)
 
 
 def test_build_model_factories_respects_enabled():
     factories = models.build_model_factories(
-        {"naive": {"enabled": True}, "sarima": {"enabled": False}}, period=12)
+        {"naive": {"enabled": True}, "sarima": {"enabled": False}}, period=12
+    )
     assert "Naive" in factories and "SARIMA" not in factories
     assert isinstance(factories["Naive"](), models.NaiveForecaster)

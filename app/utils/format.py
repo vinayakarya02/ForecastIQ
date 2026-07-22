@@ -1,4 +1,5 @@
 """Display formatting helpers (currency, percentages, compact numbers)."""
+
 from __future__ import annotations
 
 

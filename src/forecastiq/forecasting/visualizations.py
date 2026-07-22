@@ -4,11 +4,13 @@ Headless matplotlib (Agg backend) so figures render in scripts/CI without a disp
 Four diagnostics: actual-vs-forecast with intervals, residual analysis, model
 comparison, and a forecast comparison across models.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
@@ -35,10 +37,22 @@ def plot_actual_vs_forecast(sf: SeriesForecast, path: str | Path) -> Path:
     hist = sf.history
     fig, ax = plt.subplots(figsize=(11, 4.5))
     ax.plot(hist.index, hist.to_numpy(), color=ACTUAL, label="Actual")
-    ax.plot(fc.index, fc.yhat, color=FORECAST, ls="--", marker="o", ms=3, label=f"Forecast ({sf.best_model})")
-    ax.fill_between(fc.index, fc.yhat_lower, fc.yhat_upper, color=BAND, alpha=0.2, label="95% interval")
+    ax.plot(
+        fc.index,
+        fc.yhat,
+        color=FORECAST,
+        ls="--",
+        marker="o",
+        ms=3,
+        label=f"Forecast ({sf.best_model})",
+    )
+    ax.fill_between(
+        fc.index, fc.yhat_lower, fc.yhat_upper, color=BAND, alpha=0.2, label="95% interval"
+    )
     mape = sf.metrics.get(sf.best_model, {}).get("mape")
-    ax.set_title(f"Actual vs Forecast - {sf.series_id}" + (f"  (backtest MAPE {mape:.1f}%)" if mape else ""))
+    ax.set_title(
+        f"Actual vs Forecast - {sf.series_id}" + (f"  (backtest MAPE {mape:.1f}%)" if mape else "")
+    )
     ax.set_ylabel(sf.history.name or "value")
     ax.legend(loc="upper left")
     return _save(fig, path)
@@ -76,18 +90,22 @@ def plot_model_comparison(sf: SeriesForecast, path: str | Path, metric: str = "m
 
     fig, ax = plt.subplots(figsize=(9, 4.2))
     bars = ax.bar(names, vals, color=colors)
-    ax.set_title(f"Model comparison by {metric.upper()} - {sf.series_id} (lower is better)"
-                 if metric != "r2" else f"Model comparison by R2 - {sf.series_id} (higher is better)")
+    ax.set_title(
+        f"Model comparison by {metric.upper()} - {sf.series_id} (lower is better)"
+        if metric != "r2"
+        else f"Model comparison by R2 - {sf.series_id} (higher is better)"
+    )
     ax.set_ylabel(metric.upper())
-    for b, v in zip(bars, vals):
+    for b, v in zip(bars, vals, strict=True):
         ax.text(b.get_x() + b.get_width() / 2, v, f"{v:,.1f}", ha="center", va="bottom", fontsize=9)
     for lbl in ax.get_xticklabels():
         lbl.set_rotation(15)
     return _save(fig, path)
 
 
-def plot_forecast_comparison(history: pd.Series, model_factories: dict, horizon: int,
-                             path: str | Path, tail: int = 24) -> Path:
+def plot_forecast_comparison(
+    history: pd.Series, model_factories: dict, horizon: int, path: str | Path, tail: int = 24
+) -> Path:
     """Overlay every model's forward forecast on the recent history."""
     fig, ax = plt.subplots(figsize=(11, 4.5))
     recent = history.iloc[-tail:]

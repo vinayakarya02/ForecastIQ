@@ -38,3 +38,6 @@ Thumbs.db
 
 # ---- Power BI temp ----
 *.pbix.tmp
+
+# Claude Code tooling
+.claude/

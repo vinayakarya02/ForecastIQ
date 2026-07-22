@@ -1,4 +1,5 @@
 """Stage 5 — Load: (re)create the schema and write dimensions, fact, and views."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -13,8 +14,9 @@ from ..utils.io import df_to_table, get_engine, run_sql_script
 _LOAD_ORDER = ["dim_date", "dim_customer", "dim_product", "dim_region", "fact_sales"]
 
 
-def load(tables: dict[str, pd.DataFrame], cfg: Config, logger=None,
-         engine: Engine | None = None) -> dict[str, int]:
+def load(
+    tables: dict[str, pd.DataFrame], cfg: Config, logger=None, engine: Engine | None = None
+) -> dict[str, int]:
     """Create schema + views and bulk-load the star schema. Returns per-table row counts."""
     engine = engine or get_engine(cfg.db_url, echo=cfg["database"].get("echo", False))
 
@@ -34,8 +36,9 @@ def load(tables: dict[str, pd.DataFrame], cfg: Config, logger=None,
     return summary
 
 
-def write_quality_log(report: pd.DataFrame, cfg: Config, run_id: str,
-                      engine: Engine | None = None) -> None:
+def write_quality_log(
+    report: pd.DataFrame, cfg: Config, run_id: str, engine: Engine | None = None
+) -> None:
     """Persist the validation report into ``data_quality_log`` for auditability."""
     engine = engine or get_engine(cfg.db_url)
     now = datetime.now().isoformat(timespec="seconds")

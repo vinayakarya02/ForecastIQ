@@ -1,11 +1,11 @@
 """Executive Dashboard — headline KPIs, revenue/profit trends, and a summary."""
+
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st  # noqa: E402
-
 from components import charts  # noqa: E402
 from components.kpi import kpi_row  # noqa: E402
 from components.layout import empty_guard, page_header, scope_banner  # noqa: E402
@@ -26,21 +26,35 @@ if k["total_revenue"] == 0:
     st.stop()
 
 mom = da.mom_growth(scope)
-latest_mom = None if mom.empty else mom["mom_growth_pct"].dropna().iloc[-1] if mom["mom_growth_pct"].notna().any() else None
+latest_mom = (
+    None
+    if mom.empty
+    else mom["mom_growth_pct"].dropna().iloc[-1]
+    if mom["mom_growth_pct"].notna().any()
+    else None
+)
 
-kpi_row([
-    {"label": "Total Revenue", "value": compact_money(k["total_revenue"]), "delta": latest_mom,
-     "sub": "latest MoM" if latest_mom is not None else None},
-    {"label": "Total Profit", "value": compact_money(k["total_profit"])},
-    {"label": "Profit Margin", "value": pct(k["profit_margin_pct"])},
-    {"label": "Return Rate", "value": pct(k["return_rate_pct"])},
-])
-kpi_row([
-    {"label": "Orders", "value": number(k["total_orders"])},
-    {"label": "Customers", "value": number(k["total_customers"])},
-    {"label": "Avg Order Value", "value": money(k["avg_order_value"], 2)},
-    {"label": "Avg Selling Price", "value": money(k["avg_selling_price"], 2)},
-])
+kpi_row(
+    [
+        {
+            "label": "Total Revenue",
+            "value": compact_money(k["total_revenue"]),
+            "delta": latest_mom,
+            "sub": "latest MoM" if latest_mom is not None else None,
+        },
+        {"label": "Total Profit", "value": compact_money(k["total_profit"])},
+        {"label": "Profit Margin", "value": pct(k["profit_margin_pct"])},
+        {"label": "Return Rate", "value": pct(k["return_rate_pct"])},
+    ]
+)
+kpi_row(
+    [
+        {"label": "Orders", "value": number(k["total_orders"])},
+        {"label": "Customers", "value": number(k["total_customers"])},
+        {"label": "Avg Order Value", "value": money(k["avg_order_value"], 2)},
+        {"label": "Avg Selling Price", "value": money(k["avg_selling_price"], 2)},
+    ]
+)
 
 st.divider()
 
@@ -48,11 +62,25 @@ monthly = da.monthly_revenue(scope)
 if not empty_guard(monthly):
     c1, c2 = st.columns(2)
     with c1:
-        charts.show(charts.line(monthly, "period_start", "revenue", "Monthly Revenue",
-                                labels={"period_start": "", "revenue": "Revenue ($)"}))
+        charts.show(
+            charts.line(
+                monthly,
+                "period_start",
+                "revenue",
+                "Monthly Revenue",
+                labels={"period_start": "", "revenue": "Revenue ($)"},
+            )
+        )
     with c2:
-        charts.show(charts.line(monthly, "period_start", "profit", "Monthly Profit",
-                                labels={"period_start": "", "profit": "Profit ($)"}))
+        charts.show(
+            charts.line(
+                monthly,
+                "period_start",
+                "profit",
+                "Monthly Profit",
+                labels={"period_start": "", "profit": "Profit ($)"},
+            )
+        )
 
 cat = da.category_performance(scope)
 yearly = da.yearly_revenue(scope)
@@ -69,11 +97,15 @@ with c2:
     ]
     if not yearly.empty and yearly["yoy_growth_pct"].notna().any():
         last = yearly.iloc[-1]
-        lines.append(f"- **{int(last['year'])}** revenue grew **{last['yoy_growth_pct']:.1f}%** year over year.")
+        lines.append(
+            f"- **{int(last['year'])}** revenue grew **{last['yoy_growth_pct']:.1f}%** year over year."
+        )
     if not cat.empty:
         top = cat.iloc[0]
-        lines.append(f"- **{top['category']}** leads with **{money(top['revenue'])}** "
-                     f"({pct(top['profit_margin_pct'])} margin).")
+        lines.append(
+            f"- **{top['category']}** leads with **{money(top['revenue'])}** "
+            f"({pct(top['profit_margin_pct'])} margin)."
+        )
     lines.append(f"- **{pct(k['return_rate_pct'])}** of orders are returned.")
     st.markdown("\n".join(lines))
 

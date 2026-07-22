@@ -4,6 +4,7 @@ Every analytics function takes a SQLAlchemy ``engine`` and returns a pandas
 DataFrame (for tabular results) or a plain dict (for scalar KPI bundles). Metric
 logic lives in SQL views where possible so definitions stay in one place.
 """
+
 from __future__ import annotations
 
 import pandas as pd

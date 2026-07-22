@@ -1,15 +1,16 @@
 """Integration tests: transform -> load -> views against a temp SQLite DB."""
-from forecastiq.etl.transform import transform
+
 from forecastiq.etl.load import load
+from forecastiq.etl.transform import transform
 from forecastiq.utils.io import get_engine, query_df
 
 
 def test_transform_grain_and_keys(cfg, sales_frame):
     tables = transform(sales_frame, cfg)
 
-    assert len(tables["fact_sales"]) == 4                 # one row per order line
-    assert len(tables["dim_customer"]) == 2               # C1, C2
-    assert len(tables["dim_product"]) == 3                # (P1,Widget),(P2,Gadget),(P3,Gizmo)
+    assert len(tables["fact_sales"]) == 4  # one row per order line
+    assert len(tables["dim_customer"]) == 2  # C1, C2
+    assert len(tables["dim_product"]) == 3  # (P1,Widget),(P2,Gadget),(P3,Gizmo)
     assert set(tables["fact_sales"]["order_date_key"]) == {20140105, 20140210, 20140215}
     # every fact row resolved its dimension keys
     for key in ["customer_key", "product_key", "region_key"]:

@@ -7,6 +7,7 @@ dimensions are copied whole, and the analytical views are recreated. The existin
 engine **unchanged** — no analytics logic is duplicated. Unfiltered pages use the base
 (on-disk) engine directly for speed. All builders are cached per scope.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -46,10 +47,10 @@ def base_engine() -> Engine:
 def _scoped_engine(scope: FactScope) -> Engine:
     """Build a filtered in-memory warehouse for ``scope`` (cached per scope)."""
     base = base_engine()
-    mem = create_engine("sqlite://", future=True,
-                        connect_args={"check_same_thread": False}, poolclass=StaticPool)
-    fact = pd.read_sql(
-        text(f"SELECT f.* FROM fact_sales f {_FACT_JOINS} {scope.where()}"), base)
+    mem = create_engine(
+        "sqlite://", future=True, connect_args={"check_same_thread": False}, poolclass=StaticPool
+    )
+    fact = pd.read_sql(text(f"SELECT f.* FROM fact_sales f {_FACT_JOINS} {scope.where()}"), base)
     fact.to_sql("fact_sales", mem, index=False)
     for dim in _DIMS:
         pd.read_sql(text(f"SELECT * FROM {dim}"), base).to_sql(dim, mem, index=False)
@@ -67,7 +68,7 @@ def warehouse_exists() -> bool:
     url = _config().db_url
     prefix = "sqlite:///"
     if url.startswith(prefix):
-        return Path(url[len(prefix):]).exists()
+        return Path(url[len(prefix) :]).exists()
     return True  # non-SQLite backends: assume reachable
 
 
@@ -77,13 +78,19 @@ def filter_options() -> dict[str, list]:
     e = base_engine()
 
     def distinct(col: str, table: str, join: str = "") -> list:
-        df = pd.read_sql(text(f"SELECT DISTINCT {col} AS v FROM {table} {join} "
-                              f"WHERE {col} IS NOT NULL ORDER BY {col}"), e)
+        df = pd.read_sql(
+            text(
+                f"SELECT DISTINCT {col} AS v FROM {table} {join} "
+                f"WHERE {col} IS NOT NULL ORDER BY {col}"
+            ),
+            e,
+        )
         return df["v"].tolist()
 
     return {
-        "years": distinct("year", "dim_date d",
-                          "JOIN fact_sales f ON f.order_date_key = d.date_key"),
+        "years": distinct(
+            "year", "dim_date d", "JOIN fact_sales f ON f.order_date_key = d.date_key"
+        ),
         "markets": distinct("market", "dim_region"),
         "regions": distinct("region", "dim_region"),
         "countries": distinct("country", "dim_region"),

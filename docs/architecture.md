@@ -7,6 +7,17 @@
 - **Dataset-agnostic**: onboarding a new sales dataset means editing a column map, not the code.
 - **Layered**: ETL, storage, modeling, and presentation are cleanly separated so each can evolve independently.
 
+## Layer documents (each has its own diagram)
+
+| Layer | Document |
+|-------|----------|
+| ETL pipeline | [etl_pipeline.md](etl_pipeline.md) |
+| Data warehouse (star schema) | [database_schema.md](database_schema.md) |
+| Analytics engine | [analytics.md](analytics.md) |
+| Forecasting engine | [forecasting.md](forecasting.md) |
+| Streamlit application | [app_architecture.md](app_architecture.md) |
+| Data dictionary | [data_dictionary.md](data_dictionary.md) |
+
 ## 2. High-level component diagram
 
 ```mermaid

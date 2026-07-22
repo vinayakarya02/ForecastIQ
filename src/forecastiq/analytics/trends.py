@@ -1,4 +1,5 @@
 """Sales trend analytics — revenue over time at multiple grains, plus growth."""
+
 from __future__ import annotations
 
 import pandas as pd

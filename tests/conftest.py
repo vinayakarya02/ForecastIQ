@@ -1,11 +1,12 @@
 """Shared pytest fixtures for ForecastIQ tests."""
+
 import numpy as np
 import pandas as pd
 import pytest
 
 from forecastiq.config import Config
-from forecastiq.etl.transform import transform
 from forecastiq.etl.load import load
+from forecastiq.etl.transform import transform
 from forecastiq.utils.io import get_engine, run_sql_script
 
 
@@ -21,12 +22,26 @@ def _row(seq, year, month, cust, prod, reg, sales, qty, profit):
         "order_date": pd.Timestamp(year, month, 15),
         "ship_date": pd.Timestamp(year, month, 18),
         "ship_mode": "Standard Class",
-        "customer_id": cust[0], "customer_name": cust[1], "segment": cust[2],
-        "country": reg[0], "market": reg[1], "region": reg[2], "state": reg[3], "city": reg[4],
-        "product_id": prod[0], "product_name": prod[1], "category": prod[2], "sub_category": prod[3],
-        "sales": sales, "quantity": qty, "discount": 0.1, "profit": profit,
-        "shipping_cost": round(sales * 0.05, 2), "order_priority": "Medium",
-        "region_manager": reg[5], "is_returned": 1 if seq % 7 == 0 else 0,
+        "customer_id": cust[0],
+        "customer_name": cust[1],
+        "segment": cust[2],
+        "country": reg[0],
+        "market": reg[1],
+        "region": reg[2],
+        "state": reg[3],
+        "city": reg[4],
+        "product_id": prod[0],
+        "product_name": prod[1],
+        "category": prod[2],
+        "sub_category": prod[3],
+        "sales": sales,
+        "quantity": qty,
+        "discount": 0.1,
+        "profit": profit,
+        "shipping_cost": round(sales * 0.05, 2),
+        "order_priority": "Medium",
+        "region_manager": reg[5],
+        "is_returned": 1 if seq % 7 == 0 else 0,
     }
 
 
@@ -42,7 +57,11 @@ def rich_frame():
       - Nov/Dec uplift (season 1.5) -> a detectable seasonal peak
       - ~1 in 7 orders flagged returned
     """
-    customers = [("C1", "Alice", "Consumer"), ("C2", "Bob", "Corporate"), ("C3", "Cara", "Home Office")]
+    customers = [
+        ("C1", "Alice", "Consumer"),
+        ("C2", "Bob", "Corporate"),
+        ("C3", "Cara", "Home Office"),
+    ]
     prods = [
         ("P1", "Server Rack", "Technology", "Servers"),
         ("P2", "Office Chair", "Furniture", "Chairs"),
@@ -61,13 +80,34 @@ def rich_frame():
             for i in range(3):
                 seq += 1
                 sales = round(100 * season * yfac + i * 10, 2)
-                rows.append(_row(seq, year, month, customers[i], prods[i], regions[i],
-                                 sales=sales, qty=2 + i, profit=round(sales * 0.15, 2)))
+                rows.append(
+                    _row(
+                        seq,
+                        year,
+                        month,
+                        customers[i],
+                        prods[i],
+                        regions[i],
+                        sales=sales,
+                        qty=2 + i,
+                        profit=round(sales * 0.15, 2),
+                    )
+                )
             # loss-leader: a net negative-profit product (Technology)
             seq += 1
-            rows.append(_row(seq, year, month, customers[0],
-                             ("P4", "Faulty Gadget", "Technology", "Gadgets"), regions[0],
-                             sales=50.0, qty=1, profit=-20.0))
+            rows.append(
+                _row(
+                    seq,
+                    year,
+                    month,
+                    customers[0],
+                    ("P4", "Faulty Gadget", "Technology", "Gadgets"),
+                    regions[0],
+                    sales=50.0,
+                    qty=1,
+                    profit=-20.0,
+                )
+            )
     return pd.DataFrame(rows)
 
 
@@ -101,6 +141,7 @@ def schema_engine(cfg, tmp_path):
 def all_model_factories():
     """All five forecasters wired up (period 12)."""
     from forecastiq.forecasting import models
+
     return models.build_model_factories(
         {
             "naive": {"enabled": True},

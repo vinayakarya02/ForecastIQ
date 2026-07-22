@@ -3,6 +3,7 @@
 All metrics take aligned 1-D arrays of actuals and predictions and are None-safe on
 empty input. MAPE is computed over non-zero actuals to avoid division by zero.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -55,10 +56,14 @@ def select_best(metrics_by_model: dict[str, dict], metric: str = "mape") -> str 
     Falls back to RMSE when the chosen metric is missing (e.g. MAPE undefined for an
     all-zero series). Higher is better only for R2.
     """
-    candidates = {m: s.get(metric) for m, s in metrics_by_model.items() if s.get(metric) is not None}
+    candidates = {
+        m: s.get(metric) for m, s in metrics_by_model.items() if s.get(metric) is not None
+    }
     if not candidates:
         metric = "rmse"
-        candidates = {m: s.get(metric) for m, s in metrics_by_model.items() if s.get(metric) is not None}
+        candidates = {
+            m: s.get(metric) for m, s in metrics_by_model.items() if s.get(metric) is not None
+        }
     if not candidates:
         return None
     reverse = metric == "r2"

@@ -4,6 +4,7 @@ Usage:
     python pipelines/run_etl.py
     python pipelines/run_etl.py --config config/config.yaml
 """
+
 from __future__ import annotations
 
 import argparse
@@ -14,18 +15,19 @@ from pathlib import Path
 # Make `import forecastiq` work when running this script directly (no install needed).
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from forecastiq.config import Config                       # noqa: E402
-from forecastiq.utils.logger import get_logger             # noqa: E402
-from forecastiq.etl.extract import extract                 # noqa: E402
-from forecastiq.etl.clean import clean                     # noqa: E402
-from forecastiq.etl.validate import validate               # noqa: E402
-from forecastiq.etl.transform import transform             # noqa: E402
-from forecastiq.etl.load import load, write_quality_log    # noqa: E402
+from forecastiq.config import Config  # noqa: E402
+from forecastiq.etl.clean import clean  # noqa: E402
+from forecastiq.etl.extract import extract  # noqa: E402
+from forecastiq.etl.load import load, write_quality_log  # noqa: E402
+from forecastiq.etl.transform import transform  # noqa: E402
+from forecastiq.etl.validate import validate  # noqa: E402
+from forecastiq.utils.logger import get_logger  # noqa: E402
 
 
 def _print_report(report) -> None:
     try:
         from tabulate import tabulate
+
         print(tabulate(report, headers="keys", tablefmt="github", showindex=False))
     except ImportError:  # tabulate is optional at runtime
         print(report.to_string(index=False))

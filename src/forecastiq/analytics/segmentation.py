@@ -1,4 +1,5 @@
 """Customer analytics — RFM segmentation, basic CLV, repeat behaviour, top customers."""
+
 from __future__ import annotations
 
 import pandas as pd
@@ -49,9 +50,11 @@ def rfm_segment_summary(engine: Engine) -> pd.DataFrame:
     df = rfm(engine)
     summary = (
         df.groupby("rfm_segment")
-        .agg(customers=("customer_id", "nunique"),
-             revenue=("monetary", "sum"),
-             avg_monetary=("monetary", "mean"))
+        .agg(
+            customers=("customer_id", "nunique"),
+            revenue=("monetary", "sum"),
+            avg_monetary=("monetary", "mean"),
+        )
         .reset_index()
         .sort_values("revenue", ascending=False)
     )

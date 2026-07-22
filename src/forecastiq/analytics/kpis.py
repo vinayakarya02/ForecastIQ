@@ -1,4 +1,5 @@
 """Executive KPIs — the headline numbers for the whole business."""
+
 from __future__ import annotations
 
 from sqlalchemy.engine import Engine

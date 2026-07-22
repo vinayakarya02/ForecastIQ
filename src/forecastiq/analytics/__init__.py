@@ -1,4 +1,6 @@
-"""Analytics layer: business KPIs and RFM customer segmentation over the warehouse.
+"""Analytics layer over the warehouse.
 
-(Implementations land in Phase 2.)
+Modules: kpis, trends, segmentation (RFM/CLV), products, regional, returns, and a
+rule-based insights engine. Every function takes a SQLAlchemy engine and returns a
+DataFrame or dict; metric definitions are shared via SQL views.
 """

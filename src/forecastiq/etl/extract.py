@@ -5,6 +5,7 @@ For the Global Superstore workbook this reads three sheets:
     People  -> region -> manager map, added as ``region_manager``
     Returns -> (order_id, market) that were returned, added as ``is_returned`` flag
 """
+
 from __future__ import annotations
 
 import pandas as pd
@@ -25,8 +26,9 @@ def _canonicalize_orders(df: pd.DataFrame, cfg: Config) -> pd.DataFrame:
     return df[canonical].copy()
 
 
-def _add_region_manager(orders: pd.DataFrame, people: pd.DataFrame,
-                        aliases: dict | None = None, logger=None) -> pd.DataFrame:
+def _add_region_manager(
+    orders: pd.DataFrame, people: pd.DataFrame, aliases: dict | None = None, logger=None
+) -> pd.DataFrame:
     """Attach ``region_manager`` by mapping each order's region -> People.Person.
 
     ``aliases`` reconciles differing region labels between the Orders and People
@@ -39,19 +41,27 @@ def _add_region_manager(orders: pd.DataFrame, people: pd.DataFrame,
         orders["region_manager"] = "Unknown"
         return orders
     mapping = dict(
-        zip(people[region_col].astype(str).str.strip(), people[person_col].astype(str).str.strip())
+        zip(
+            people[region_col].astype(str).str.strip(),
+            people[person_col].astype(str).str.strip(),
+            strict=False,
+        )
     )
     resolved = orders["region"].astype(str).str.strip().replace(aliases)
     orders["region_manager"] = resolved.map(mapping).fillna("Unknown")
     if logger:
         unmapped = int((orders["region_manager"] == "Unknown").sum())
-        logger.info("People: %d regions mapped to managers (%d order lines unmapped)",
-                    len(mapping), unmapped)
+        logger.info(
+            "People: %d regions mapped to managers (%d order lines unmapped)",
+            len(mapping),
+            unmapped,
+        )
     return orders
 
 
-def _add_return_flag(orders: pd.DataFrame, returns: pd.DataFrame,
-                     market_aliases: dict | None = None, logger=None) -> pd.DataFrame:
+def _add_return_flag(
+    orders: pd.DataFrame, returns: pd.DataFrame, market_aliases: dict | None = None, logger=None
+) -> pd.DataFrame:
     """Attach ``is_returned`` (0/1) by matching (order_id, market) against Returns.
 
     ``market_aliases`` reconciles market labels between the Returns and Orders sheets
@@ -71,7 +81,11 @@ def _add_return_flag(orders: pd.DataFrame, returns: pd.DataFrame,
         orders["is_returned"] = 0
         return orders
 
-    keys = ["order_id", "market"] if "market" in returns.columns and "market" in orders.columns else ["order_id"]
+    keys = (
+        ["order_id", "market"]
+        if "market" in returns.columns and "market" in orders.columns
+        else ["order_id"]
+    )
     ret = returns[keys].copy()
     for k in keys:
         ret[k] = ret[k].astype(str).str.strip()
@@ -86,8 +100,11 @@ def _add_return_flag(orders: pd.DataFrame, returns: pd.DataFrame,
     merged = left.merge(ret, on=keys, how="left")
     orders["is_returned"] = merged["is_returned"].fillna(0).astype(int).to_numpy()
     if logger:
-        logger.info("Returns: %d return records; flagged %d order lines as returned",
-                    len(ret), int(orders["is_returned"].sum()))
+        logger.info(
+            "Returns: %d return records; flagged %d order lines as returned",
+            len(ret),
+            int(orders["is_returned"].sum()),
+        )
     return orders
 
 
@@ -108,13 +125,19 @@ def extract(cfg: Config, logger=None) -> pd.DataFrame:
 
         people = book.get(src.get("people_sheet", "People"))
         aliases = src.get("region_aliases", {}) or {}
-        df = (_add_region_manager(df, people, aliases, logger)
-              if people is not None else df.assign(region_manager="Unknown"))
+        df = (
+            _add_region_manager(df, people, aliases, logger)
+            if people is not None
+            else df.assign(region_manager="Unknown")
+        )
 
         returns = book.get(src.get("returns_sheet", "Returns"))
         market_aliases = src.get("market_aliases", {}) or {}
-        df = (_add_return_flag(df, returns, market_aliases, logger)
-              if returns is not None else df.assign(is_returned=0))
+        df = (
+            _add_return_flag(df, returns, market_aliases, logger)
+            if returns is not None
+            else df.assign(is_returned=0)
+        )
         return df
 
     # ---- CSV fallback ----

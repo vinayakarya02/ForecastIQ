@@ -1,10 +1,11 @@
 """Tests for returns analytics."""
+
 from forecastiq.analytics import returns
 
 
 def test_returned_totals(warehouse):
     t = returns.returned_totals(warehouse)
-    assert t["returned_orders"] == 13           # seq % 7 == 0 across 96 orders
+    assert t["returned_orders"] == 13  # seq % 7 == 0 across 96 orders
     assert 0 < t["return_rate_pct"] < 100
     assert t["returned_revenue"] > 0
 

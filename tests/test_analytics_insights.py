@@ -1,4 +1,5 @@
 """Tests for the rule-based insights engine."""
+
 from forecastiq.analytics import insights
 
 
@@ -6,10 +7,10 @@ def test_generate_insights_categories(warehouse):
     generated = insights.generate_insights(warehouse)
     assert len(generated) >= 4
     cats = {i.category for i in generated}
-    assert "growth" in cats          # fastest-growing category
-    assert "seasonality" in cats     # Nov/Dec uplift
-    assert "risk" in cats            # loss-making products
-    assert "regional" in cats        # best/weakest region
+    assert "growth" in cats  # fastest-growing category
+    assert "seasonality" in cats  # Nov/Dec uplift
+    assert "risk" in cats  # loss-making products
+    assert "regional" in cats  # best/weakest region
 
 
 def test_seasonal_peak_detected(warehouse):

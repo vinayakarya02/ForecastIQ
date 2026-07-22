@@ -3,6 +3,7 @@
 Loads ``config/config.yaml`` and layers environment-variable overrides on top,
 so code never hard-codes paths, model params, or the database URL.
 """
+
 from __future__ import annotations
 
 import os
@@ -21,9 +22,9 @@ class Config:
         self._data = data
 
     @classmethod
-    def load(cls, path: str | Path | None = None) -> "Config":
+    def load(cls, path: str | Path | None = None) -> Config:
         cfg_path = Path(path) if path else PROJECT_ROOT / "config" / "config.yaml"
-        with open(cfg_path, "r", encoding="utf-8") as f:
+        with open(cfg_path, encoding="utf-8") as f:
             data = yaml.safe_load(f)
         return cls(data)
 
@@ -45,7 +46,7 @@ class Config:
         url = os.getenv("FORECASTIQ_DB_URL") or self._data["database"]["url"]
         prefix = "sqlite:///"
         if url.startswith(prefix) and not url.startswith("sqlite:////"):
-            rel = url[len(prefix):]
+            rel = url[len(prefix) :]
             url = prefix + (PROJECT_ROOT / rel).as_posix()
         return url
 

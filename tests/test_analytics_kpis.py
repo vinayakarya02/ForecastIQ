@@ -1,4 +1,5 @@
 """Tests for executive KPIs."""
+
 from forecastiq.analytics import kpis
 
 

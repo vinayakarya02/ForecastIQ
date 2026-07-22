@@ -4,6 +4,7 @@ Thin wrappers that call the existing ``forecastiq.analytics`` / ``forecastiq.for
 modules against the (optionally filtered) engine and cache the results per scope. No
 metric or model logic lives here — it only reuses and caches.
 """
+
 from __future__ import annotations
 
 import warnings
@@ -19,6 +20,7 @@ from forecastiq.forecasting import predictor
 
 from .scope import FactScope
 from .warehouse import _config, base_engine, engine_for
+
 
 # ---------------------------------------------------------------- executive / trends
 @st.cache_data(show_spinner=False)
@@ -177,7 +179,9 @@ def business_insights(scope: FactScope) -> pd.DataFrame:
 def forecast_levels() -> dict[str, list[str]]:
     """Available keys per forecast level (for the Forecasting page selectors)."""
     e = base_engine()
-    return {level: fdata.list_keys(e, level) for level in ("category", "market", "region", "product")}
+    return {
+        level: fdata.list_keys(e, level) for level in ("category", "market", "region", "product")
+    }
 
 
 @st.cache_data(show_spinner=False)
@@ -205,9 +209,14 @@ def run_forecast(level: str, key: str | None, horizon: int, granularity: str = "
         warnings.simplefilter("ignore")
         y = fdata.build_series(base_engine(), fcfg["target"], granularity, level, key)
         sf = predictor.forecast_series(
-            y, factories, horizon=horizon, n_folds=fcfg["backtest_folds"],
+            y,
+            factories,
+            horizon=horizon,
+            n_folds=fcfg["backtest_folds"],
             selection_metric=fcfg["selection_metric"],
-            series_id=fdata.series_id(level, key), granularity=granularity)
+            series_id=fdata.series_id(level, key),
+            granularity=granularity,
+        )
 
     fc = sf.forecast
     return {
@@ -215,8 +224,14 @@ def run_forecast(level: str, key: str | None, horizon: int, granularity: str = "
         "best_model": sf.best_model,
         "selection_metric": fcfg["selection_metric"],
         "history": pd.DataFrame({"period_start": y.index, "value": y.to_numpy()}),
-        "forecast": pd.DataFrame({"period_start": fc.index, "yhat": fc.yhat,
-                                  "yhat_lower": fc.yhat_lower, "yhat_upper": fc.yhat_upper}),
+        "forecast": pd.DataFrame(
+            {
+                "period_start": fc.index,
+                "yhat": fc.yhat,
+                "yhat_lower": fc.yhat_lower,
+                "yhat_upper": fc.yhat_upper,
+            }
+        ),
         "metrics": pd.DataFrame([{"model": m, **vals} for m, vals in sf.metrics.items()]),
         "backtest": sf.backtest,
         "failures": sf.failures,

@@ -1,5 +1,5 @@
-"""Optional FastAPI service exposing KPIs and forecasts as JSON.
+"""Optional FastAPI service exposing KPIs and forecasts as JSON (planned).
 
-Read-only over the same SQL views Power BI uses, so numbers stay consistent.
-(Implementation lands in Phase 4.)
+Would be read-only over the same SQL views the app uses, so numbers stay consistent.
+Design: ``docs/api.md``.
 """

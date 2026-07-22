@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & discussion
+    url: https://github.com/vinayakarya02/ForecastIQ/discussions
+    about: Ask questions or share ideas here rather than opening an issue.
+  - name: Documentation
+    url: https://github.com/vinayakarya02/ForecastIQ/tree/main/docs
+    about: Architecture, methodology, installation, and deployment guides.

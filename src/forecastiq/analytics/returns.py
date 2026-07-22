@@ -4,6 +4,7 @@ Returns are recorded at the order grain (an order is returned or not), so return
 rate = returned distinct orders / total distinct orders. Returned revenue/profit sum
 the line-level measures on returned orders.
 """
+
 from __future__ import annotations
 
 import pandas as pd
@@ -84,5 +85,7 @@ def returned_totals(engine: Engine) -> dict:
         "returned_orders": int(row["returned_orders"]),
         "total_orders": int(row["total_orders"]),
         "return_rate_pct": pct(int(row["returned_orders"]), int(row["total_orders"])),
-        "returned_revenue_share_pct": pct(float(row["returned_revenue"]), float(row["total_revenue"])),
+        "returned_revenue_share_pct": pct(
+            float(row["returned_revenue"]), float(row["total_revenue"])
+        ),
     }

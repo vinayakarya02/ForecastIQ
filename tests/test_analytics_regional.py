@@ -1,4 +1,5 @@
 """Tests for regional analytics."""
+
 from forecastiq.analytics import regional
 
 
@@ -14,6 +15,6 @@ def test_region_manager_performance(warehouse):
 
 
 def test_geography_levels(warehouse):
-    assert len(regional.country_performance(warehouse)) == 2     # United States, Germany
+    assert len(regional.country_performance(warehouse)) == 2  # United States, Germany
     assert not regional.state_performance(warehouse).empty
     assert not regional.city_performance(warehouse).empty

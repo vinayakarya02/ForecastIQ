@@ -1,4 +1,5 @@
 """Unit tests for the validate stage."""
+
 import pandas as pd
 
 from forecastiq.etl.validate import validate
@@ -25,14 +26,14 @@ def test_negative_sales_fails(cfg, sales_frame):
 
 def test_out_of_range_discount_warns(cfg, sales_frame):
     bad = sales_frame.copy()
-    bad.loc[0, "discount"] = 1.5          # outside [0, 1]
+    bad.loc[0, "discount"] = 1.5  # outside [0, 1]
     report, ok = validate(bad, cfg)
-    assert ok is True                     # WARN does not block the load
+    assert ok is True  # WARN does not block the load
     assert _status(report, "discount_in_range") == "WARN"
 
 
 def test_ship_before_order_warns(cfg, sales_frame):
     bad = sales_frame.copy()
-    bad.loc[0, "ship_date"] = pd.Timestamp("2013-12-01")   # before order_date
+    bad.loc[0, "ship_date"] = pd.Timestamp("2013-12-01")  # before order_date
     report, ok = validate(bad, cfg)
     assert _status(report, "ship_after_order") == "WARN"

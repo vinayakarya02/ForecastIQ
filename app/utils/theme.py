@@ -1,13 +1,14 @@
 """Central color palette, typography, and CSS for a consistent, commercial look."""
+
 from __future__ import annotations
 
 import streamlit as st
 
 # ---- Brand palette ----
-PRIMARY = "#2563eb"     # blue   - primary series / accents
-ACCENT = "#f59e0b"      # amber  - forecast / secondary
-GREEN = "#16a34a"       # positive
-RED = "#dc2626"         # negative / loss
+PRIMARY = "#2563eb"  # blue   - primary series / accents
+ACCENT = "#f59e0b"  # amber  - forecast / secondary
+GREEN = "#16a34a"  # positive
+RED = "#dc2626"  # negative / loss
 SLATE = "#475569"
 MUTED = "#94a3b8"
 

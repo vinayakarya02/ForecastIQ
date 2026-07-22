@@ -1,4 +1,5 @@
 """Configured logging — a single, consistent logger across the platform."""
+
 from __future__ import annotations
 
 import logging

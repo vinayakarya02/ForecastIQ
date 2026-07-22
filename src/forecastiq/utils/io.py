@@ -1,4 +1,5 @@
 """IO & database helpers shared across the pipeline."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -38,9 +39,9 @@ def run_sql_script(engine: Engine, sql_path: str | Path) -> None:
     try:
         cur = raw.cursor()
         if engine.dialect.name == "sqlite":
-            cur.executescript(sql)          # handles comments, PRAGMA, many statements
+            cur.executescript(sql)  # handles comments, PRAGMA, many statements
         else:  # pragma: no cover - postgres path
-            cur.execute(sql)                # psycopg2 accepts multi-statement strings
+            cur.execute(sql)  # psycopg2 accepts multi-statement strings
         raw.commit()
     finally:
         raw.close()

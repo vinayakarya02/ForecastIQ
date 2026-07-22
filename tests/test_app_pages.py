@@ -3,6 +3,7 @@
 Uses Streamlit's AppTest to execute each page against the real warehouse. Requires the
 warehouse to exist (run the ETL first); skipped gracefully if it doesn't.
 """
+
 from pathlib import Path
 
 import pytest
@@ -14,12 +15,14 @@ _PAGES = sorted(_PAGES_DIR.glob("*.py"))
 _DB = Path(Config.load().db_url.replace("sqlite:///", ""))
 
 pytestmark = pytest.mark.skipif(
-    not _DB.exists(), reason="warehouse not built (run pipelines/run_etl.py)")
+    not _DB.exists(), reason="warehouse not built (run pipelines/run_etl.py)"
+)
 
 
 @pytest.mark.parametrize("page", _PAGES, ids=lambda p: p.stem)
 def test_page_renders_without_exception(page):
     from streamlit.testing.v1 import AppTest
+
     at = AppTest.from_file(str(page), default_timeout=90)
     at.run()
     assert not at.exception, f"{page.name} raised: {at.exception}"

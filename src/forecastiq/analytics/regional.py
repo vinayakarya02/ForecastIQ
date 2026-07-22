@@ -1,4 +1,5 @@
 """Regional analytics — performance at every geography grain plus region manager."""
+
 from __future__ import annotations
 
 import pandas as pd
@@ -47,6 +48,4 @@ def city_performance(engine: Engine) -> pd.DataFrame:
 
 def region_manager_performance(engine: Engine) -> pd.DataFrame:
     """Performance by regional manager (from the People sheet)."""
-    return read(
-        engine, _PERF_SQL.format(select="r.region_manager,", group="r.region_manager")
-    )
+    return read(engine, _PERF_SQL.format(select="r.region_manager,", group="r.region_manager"))

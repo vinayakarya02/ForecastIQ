@@ -4,210 +4,214 @@
 
 ### AI-Powered Sales Forecasting & Business Analytics Platform
 
-*Turn raw historical sales data into clean insights, demand forecasts, and interactive dashboards.*
+*Turn raw transactional sales data into clean insights, demand forecasts, and an interactive BI app.*
 
-[![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
-[![Pandas](https://img.shields.io/badge/Pandas-2.x-150458.svg)](https://pandas.pydata.org/)
-[![scikit-learn](https://img.shields.io/badge/scikit--learn-1.x-F7931E.svg)](https://scikit-learn.org/)
-[![statsmodels](https://img.shields.io/badge/statsmodels-0.14-8CAAE6.svg)](https://www.statsmodels.org/)
-[![Power BI](https://img.shields.io/badge/Power%20BI-Dashboard-F2C811.svg)](https://powerbi.microsoft.com/)
+[![CI](https://github.com/vinayakarya02/ForecastIQ/actions/workflows/ci.yml/badge.svg)](https://github.com/vinayakarya02/ForecastIQ/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
+[![Ruff](https://img.shields.io/badge/lint-ruff-000000.svg)](https://docs.astral.sh/ruff/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-app-FF4B4B.svg)](https://streamlit.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0.0-informational.svg)](CHANGELOG.md)
 
 </div>
 
 ---
 
-## 🎯 Overview
-
-**ForecastIQ** is an end-to-end analytics platform that ingests historical sales data, runs it through a
-validated **ETL pipeline**, stores it in a **SQL star schema**, produces **time-series demand forecasts** using
-multiple competing models, and surfaces everything through an **interactive Power BI dashboard** and an optional
-**FastAPI** service.
-
-It is designed to be **domain-agnostic** — it works for any business that has transactional sales history
-(retail, distribution, B2B, subscriptions). The reference implementation uses the public
-[Global Superstore](https://www.kaggle.com/datasets/apoorvaappz/global-super-store-dataset) dataset from Kaggle.
-
-> Built as a portfolio project to demonstrate practical **data engineering, statistics, forecasting, and BI**
-> skills on a realistic dataset — not a toy CRUD app.
+## Table of contents
+- [Overview](#-overview) · [Motivation](#-motivation) · [Features](#-features) · [Architecture](#️-architecture)
+- [Quick start](#-quick-start) · [Installation](#-installation) · [Project structure](#-project-structure)
+- [Analytics methodology](#-analytics-methodology) · [Forecasting methodology](#-forecasting-methodology)
+- [Interactive app](#️-interactive-application) · [Tech stack](#-technology-stack) · [Testing](#-testing)
+- [Deployment](#-deployment) · [Future improvements](#-future-improvements) · [Contributing](#-contributing)
 
 ---
 
-## ✨ Key Features
+## 🎯 Overview
+
+**ForecastIQ** is an end-to-end platform that ingests historical sales data through a validated **ETL
+pipeline**, stores it in a **SQL star-schema warehouse**, computes a full suite of **business analytics**,
+produces **time-series demand forecasts** with automatic model selection, and surfaces everything through a
+**10-page interactive Streamlit application**.
+
+It is **domain-agnostic** — it works for any business with transactional sales history (retail,
+distribution, B2B). The reference implementation uses the public
+[Global Superstore](https://www.kaggle.com/datasets/apoorvaappz/global-super-store-dataset) dataset
+(**51,290 order lines**, 2011–2014, **$12.64M** revenue across 7 markets).
+
+## 💡 Motivation
+
+Most analytics portfolio projects stop at a single notebook. ForecastIQ instead demonstrates the **full
+lifecycle a data/analytics engineer owns**: reliable ingestion with data-quality gates, a dimensional
+warehouse, reusable analytics, honest forecasting with backtesting, and a production-style app on top —
+all tested, linted, documented, and deployable. Nothing is fabricated: the repo ships empty and expects a
+real dataset.
+
+## ✨ Features
 
 | Area | Capabilities |
 |------|--------------|
-| **ETL** | CSV ingestion, schema validation, data cleaning, deduplication, feature engineering, load to SQL |
-| **Data Quality** | Row-count reconciliation, null/type/range checks, referential-integrity checks, validation report |
-| **Analytics** | Revenue analytics, product performance, regional analysis, RFM customer segmentation, KPIs |
-| **Forecasting** | Monthly & quarterly demand forecasts, trend & seasonality decomposition, confidence intervals |
-| **Modeling** | ARIMA, SARIMA, Prophet *(optional)*, Linear Regression, Random Forest, XGBoost *(optional)* |
-| **Model Selection** | Backtesting on a hold-out window, automatic best-model selection by MAPE/RMSE |
-| **Evaluation** | RMSE, MAE, MAPE, R² reported per model and per series |
-| **Dashboards** | Power BI report: revenue trends, category/region breakdowns, forecast vs actual, KPIs, filters |
-| **API** *(optional)* | FastAPI endpoints for KPIs and on-demand forecasts |
-| **Reporting** | Exportable CSV/Excel forecast tables and PNG figures |
-
----
+| **ETL** | Excel (Orders / People / Returns) ingestion, cleaning, dedup, **data-quality gates** (PASS/WARN/FAIL), star-schema transform, SQL load |
+| **Warehouse** | Kimball star schema (4 dims + fact), analytical **views**, forecast/metric output tables |
+| **Analytics** | Executive KPIs, sales trends, **RFM segmentation**, product / regional / returns analytics |
+| **Insights** | Rule-based engine — fastest-growing/declining categories, seasonality, returns, opportunities |
+| **Forecasting** | **Naive, MovingAverage, LinearRegression, ARIMA, SARIMA** behind one interface |
+| **Model selection** | **Rolling-origin backtesting**, automatic best-model pick, prediction intervals |
+| **Evaluation** | RMSE, MAE, MAPE, R² per model per series, persisted to the warehouse |
+| **App** | 10 Streamlit pages, **global filters**, Plotly charts, world map, interactive forecasting, CSV exports |
+| **Quality** | 66 tests, Ruff lint/format, GitHub Actions CI, Docker, full docs |
 
 ## 🏗️ Architecture
 
 ```mermaid
 flowchart LR
-    A[Raw Sales CSV<br/>Kaggle: Global Superstore] --> B[EXTRACT<br/>load + schema check]
-    B --> C[CLEAN<br/>types, nulls, dedupe]
-    C --> D[VALIDATE<br/>quality gates + report]
-    D --> E[TRANSFORM<br/>feature engineering]
-    E --> F[(SQL Database<br/>star schema)]
-    F --> G[FORECASTING<br/>ARIMA / SARIMA / ML]
-    G --> H[MODEL SELECTION<br/>best by MAPE / RMSE]
-    H --> F
-    F --> I[Power BI Dashboard]
-    F --> J[FastAPI Service]
-    G --> K[Reports: CSV / figures]
+    RAW[Global Superstore.xls] --> ETL[ETL<br/>extract·clean·validate·transform·load]
+    ETL --> DB[(SQL Warehouse<br/>star schema + views)]
+    DB --> AN[Analytics engine]
+    DB --> FC[Forecasting engine]
+    FC --> DB
+    AN --> APP[Streamlit app<br/>10 pages · global filters]
+    FC --> APP
+    DB --> APP
 ```
 
-See [`docs/architecture.md`](docs/architecture.md) for the detailed component diagram and data flow.
+Detailed design + per-layer diagrams: [`docs/architecture.md`](docs/architecture.md).
 
----
+## 🚀 Quick start
 
-## 📁 Repository Structure
+```bash
+git clone https://github.com/vinayakarya02/ForecastIQ.git && cd ForecastIQ
+python -m venv .venv && . .venv/Scripts/activate          # Unix: source .venv/bin/activate
+pip install -e ".[app]"
+
+# Place the dataset at data/raw/Global Superstore.xls  (see docs/installation.md)
+
+python pipelines/run_etl.py         # 1. Excel -> validated warehouse
+python pipelines/run_analytics.py   # 2. KPIs, segments, insights -> reports/analytics/
+python pipelines/run_forecast.py    # 3. backtest, select, forecast -> warehouse
+streamlit run app/app.py            # 4. explore at http://localhost:8501
+```
+With `make`: `make install && make pipeline && make app`.
+
+## 📦 Installation
+
+Requires **Python 3.10+**. Install the package with the app extra (`.[app]`) or the pinned list
+(`pip install -r requirements.txt`). The legacy `.xls` reader (`xlrd`) and all engines are included.
+Full guide, including the dataset download: [`docs/installation.md`](docs/installation.md).
+
+## 📁 Project structure
 
 ```
 ForecastIQ/
-├── config/               # YAML configuration (paths, model params, thresholds)
-├── data/                 # raw / interim / processed / external  (git-ignored)
-├── sql/                  # DDL schema, analytical views, analysis queries
-├── src/forecastiq/       # installable Python package
-│   ├── etl/              # extract, clean, validate, transform, load
-│   ├── forecasting/      # data, features, models, trainer, evaluator, predictor, visualizations
-│   ├── analytics/        # KPIs, trends, RFM, products, regional, returns, insights
-│   ├── api/              # FastAPI app (optional)
-│   └── utils/            # logging, IO, config loader
-├── app/                  # Streamlit platform (app.py, 10 pages, components, utils)
-├── pipelines/            # entrypoints (run_etl.py, run_analytics.py, run_forecast.py)
-├── notebooks/            # EDA, ETL demo, forecasting walkthrough
-├── powerbi/              # dashboard build guide + DAX measures
-├── docs/                 # architecture, schema, data dictionary, roadmap
-├── tests/                # unit tests for validation, cleaning, metrics
-└── reports/              # generated figures and forecast outputs
+├── config/               # config.yaml — paths, column map, quality rules, model params
+├── sql/                  # star-schema DDL, analytical views, analysis queries
+├── src/forecastiq/       # installable package (engine logic — reused everywhere)
+│   ├── etl/              # extract · clean · validate · transform · load
+│   ├── analytics/        # kpis · trends · segmentation · products · regional · returns · insights
+│   ├── forecasting/      # data · features · models · trainer · evaluator · predictor · visualizations
+│   └── utils/            # config loader · logging · IO/DB helpers
+├── app/                  # Streamlit platform (app.py · 10 pages · components · utils)
+├── pipelines/            # run_etl.py · run_analytics.py · run_forecast.py
+├── notebooks/            # executed EDA notebook
+├── tests/                # 66 tests (engines on fixtures + Streamlit AppTest page checks)
+├── docs/                 # architecture, methodology, installation, deployment, release
+└── data/ · reports/      # git-ignored dataset & generated outputs
 ```
 
-Full breakdown: [`docs/folder_structure.md`](docs/folder_structure.md).
+## 📊 Analytics methodology
 
----
+Metric definitions live once (in SQL views + the `analytics` package) and are reused by the pipelines,
+the app, and any BI tool — a single source of truth.
 
-## 🚀 Quick Start
+- **KPIs**: revenue, profit, margin, orders, customers, AOV, average selling price, return rate.
+- **Trends**: monthly/quarterly/yearly revenue, MoM & YoY growth, rolling averages.
+- **Customers**: **RFM** quartile scoring → Champions / Loyal / At-Risk / …, basic CLV, repeat analysis.
+- **Products & regions**: category → sub-category → product performance; market → region → country → city;
+  region-manager performance.
+- **Returns**: return rate and returned value by region / category / product (order-grain semantics).
+- **Insights engine**: rules with **data-derived thresholds** (medians, growth signs, volume floors) — no
+  hardcoded numbers. Details: [`docs/analytics.md`](docs/analytics.md).
 
-```bash
-# 1. Clone
-git clone https://github.com/vinayakarya02/ForecastIQ.git
-cd ForecastIQ
+## 🔮 Forecasting methodology
 
-# 2. Create environment
-python -m venv .venv
-# Windows:  .venv\Scripts\activate
-# macOS/Linux: source .venv/bin/activate
-
-# 3. Install
-pip install -r requirements.txt
-
-# 4. Add data
-#    Download "Global Superstore" from Kaggle and place the workbook at:
-#    data/raw/Global Superstore.xls   (sheets: Orders, People, Returns; see docs/installation.md)
-
-# 5. Run the ETL pipeline  (Excel workbook -> validated SQL warehouse)
-python pipelines/run_etl.py
-
-# 6. Run the analytics layer (KPIs, trends, segments, returns, auto-insights)
-python pipelines/run_analytics.py        # exports to reports/analytics/
-
-# 7. Run the forecasting pipeline (train, compare, select best, persist)
-python pipelines/run_forecast.py --granularity monthly --horizon 6
-
-# 8. Launch the interactive platform
-streamlit run app/app.py                 # http://localhost:8501
-```
-
-Detailed setup: [`docs/installation.md`](docs/installation.md).
-
----
-
-## 🧰 Tech Stack
-
-**Language & Data:** Python 3.11, Pandas, NumPy, SQL (SQLite by default, PostgreSQL-ready)
-**Modeling:** statsmodels (ARIMA/SARIMA), scikit-learn (Linear Regression, Random Forest), Prophet & XGBoost *(optional extras)*
-**Visualization:** Plotly, Matplotlib, Power BI
-**App:** Streamlit (multipage, cached, Plotly-powered)
-**Serving:** FastAPI + Uvicorn *(optional)*
-**Tooling:** pytest, Git, PyYAML, SQLAlchemy
-
----
-
-## 📊 Modeling Approach
-
-1. Aggregate the fact table to a **monthly (or quarterly) time series** per series (total, category, region).
+1. Aggregate the fact table to a **monthly (or quarterly) series** per slice (total / category / region / …).
 2. Engineer features: **trend, cyclical seasonality, lags, rolling/moving averages**.
-3. Fit competing models: **Naive, Moving Average, Linear Regression, ARIMA, SARIMA** (Prophet optional).
-4. **Rolling-origin backtest** each model; score with **RMSE, MAE, MAPE, R²**.
-5. **Automatically select the best model** per series, refit on full history, forecast with prediction intervals.
-6. Persist forecasts + metrics back to SQL and render diagnostic figures.
+3. Fit five competing models — **Naive, MovingAverage, LinearRegression, ARIMA, SARIMA** (Prophet optional).
+4. **Rolling-origin backtest** (not a single split); score pooled out-of-sample predictions with RMSE/MAE/MAPE/R².
+5. **Automatically select** the best model per series, refit on full history, forecast ahead with intervals.
+6. Persist forecasts + metrics to the warehouse; render diagnostic figures.
 
-Details & assumptions: [`docs/forecasting.md`](docs/forecasting.md).
+On Global Superstore monthly revenue, the seasonality-aware models (LinearRegression, SARIMA) beat the flat
+baselines; per-series best MAPE ranges **~12–21%**. Model rationale, assumptions, and results:
+[`docs/forecasting.md`](docs/forecasting.md).
 
----
+<p align="center"><img src="docs/images/forecast_example.png" width="72%" alt="ForecastIQ forecast: actual vs forecast with confidence interval"></p>
 
-## 🖥️ Interactive Application
+## 🖥️ Interactive application
 
-A professional **Streamlit** platform sits on top of the warehouse and **reuses the analytics and
-forecasting engines unchanged**. Ten pages, global sidebar filters that scope every view, interactive
-Plotly charts, and CSV exports throughout.
-
-```bash
-streamlit run app/app.py        # http://localhost:8501
-```
+A **Streamlit** platform that **reuses the analytics and forecasting engines unchanged** — global filters
+build a scoped in-memory warehouse the engines run against, so no metric logic is duplicated in the UI.
 
 | Page | Shows |
 |------|-------|
 | 🏠 Home | overview, architecture, warehouse & forecast stats |
-| 📊 Executive Dashboard | headline KPIs, revenue & profit trends |
+| 📊 Executive Dashboard | headline KPIs, revenue & profit trends, summary |
 | 📈 Sales Analytics | monthly/quarterly/yearly, growth, moving averages, breakdowns |
 | 👥 Customer Analytics | RFM segments, CLV distribution, repeat & top customers |
 | 📦 Product Analytics | category / sub-category / product performance, loss-makers |
-| 🌍 Regional Analytics | market → city, region managers, world choropleth |
+| 🌍 Regional Analytics | market → city, region managers, **world choropleth** |
 | ↩️ Returns Analytics | return rate, returned value, trends, hotspots |
-| 🔮 Forecasting | pick a series, run the engine, view forecast + intervals + metrics |
-| 💡 Business Insights | auto-generated rule-based observations |
+| 🔮 Forecasting | pick a series → run the engine → forecast + intervals + metrics + table |
+| 💡 Business Insights | auto-generated observations |
 | 🏁 Model Performance | compare every model (RMSE / MAE / MAPE / R²) |
 
-**Global filters:** Year · Market · Region · Country · Category · Sub-category · Segment — every page
-updates dynamically. Architecture: [`docs/app_architecture.md`](docs/app_architecture.md) ·
-Deployment: [`docs/deployment.md`](docs/deployment.md).
+**Global filters:** Year · Market · Region · Country · Category · Sub-category · Segment.
+App architecture: [`docs/app_architecture.md`](docs/app_architecture.md).
 
-<p align="center"><img src="docs/images/forecast_example.png" width="72%" alt="ForecastIQ forecast example"></p>
+## 🧰 Technology stack
 
----
+| Layer | Tools |
+|-------|-------|
+| Language & data | Python 3.11, Pandas, NumPy |
+| Storage | SQL — SQLite by default, PostgreSQL-ready (SQLAlchemy) |
+| Statistics & ML | statsmodels (ARIMA/SARIMA), scikit-learn (LinearRegression) |
+| Visualisation | Plotly, Matplotlib |
+| Application | Streamlit (multipage, cached) |
+| Tooling | pytest, Ruff, pre-commit, GitHub Actions, Docker, PyYAML |
 
-## 🗺️ Roadmap
+## 🧪 Testing
 
-- [x] Architecture, repository structure, and database schema
-- [x] ETL pipeline (Excel: Orders/People/Returns → validated star schema)
-- [x] Analytics layer (KPIs, trends, RFM, products, regional, returns, insights) + EDA notebook
-- [x] Forecasting engine (5 models, rolling-origin backtest, auto model selection, persisted forecasts)
-- [x] Interactive Streamlit platform (10 pages, global filters, forecasting UI, exports)
-- [ ] FastAPI service (optional)
-- [ ] Power BI dashboard + DAX measures
-- [x] Unit tests (66 passing) &nbsp;·&nbsp; [ ] CI
+```bash
+pytest -q            # 66 tests
+ruff check . && ruff format --check .
+```
+Engine tests build **in-memory warehouses from deterministic fixtures** (no dataset needed); the Streamlit
+page tests run every page through `AppTest` and self-skip when no warehouse is present. CI runs all three
+checks on Python 3.11 & 3.12.
 
-Full plan: [`docs/roadmap.md`](docs/roadmap.md).
+## 🚢 Deployment
 
----
+Local, Docker (auto-builds the warehouse on first run), or Streamlit Community Cloud —
+see [`docs/deployment.md`](docs/deployment.md). Configuration in `.streamlit/config.toml`; database URL
+overridable via `FORECASTIQ_DB_URL`.
+
+## 🗺️ Future improvements
+
+- Optional **FastAPI** service exposing KPIs and forecasts as JSON (design in [`docs/api.md`](docs/api.md)).
+- **Power BI** report over the same views (guide in [`powerbi/`](powerbi/README.md)).
+- Prophet / gradient-boosted models behind the existing model interface.
+- Scheduled refresh + anomaly alerts on MoM growth.
+
+## 🤝 Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) and the [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). Quality gates:
+`ruff check .`, `ruff format --check .`, `pytest -q`.
 
 ## 📄 License
 
-Released under the [MIT License](LICENSE). Dataset licenses belong to their respective Kaggle authors.
+[MIT](LICENSE). Dataset licenses belong to their respective Kaggle authors.
 
 ## 👤 Author
 
-**Vinayak Arya** — B.Tech CSE (AI & ML), IIIT Nagpur
-[LinkedIn](https://www.linkedin.com/in/vinayak-arya-325819278/) · [GitHub](https://github.com/vinayakarya02)
+**Vinayak Arya** — B.Tech CSE (AI & ML), IIIT Nagpur ·
+[LinkedIn](https://www.linkedin.com/in/vinayak-arya-325819278/) ·
+[GitHub](https://github.com/vinayakarya02)

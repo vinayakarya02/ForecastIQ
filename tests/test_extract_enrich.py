@@ -1,4 +1,5 @@
 """Unit tests for the Excel enrichment helpers (People + Returns)."""
+
 import pandas as pd
 
 from forecastiq.etl.extract import _add_region_manager, _add_return_flag
@@ -10,9 +11,9 @@ def test_region_manager_resolves_alias():
         {"Person": ["Larry Hughes", "Kelly Williams"], "Region": ["AMEA", "East"]}
     )
     out = _add_region_manager(orders.copy(), people, aliases={"EMEA": "AMEA"})
-    assert out.loc[0, "region_manager"] == "Larry Hughes"    # EMEA -> AMEA -> manager
+    assert out.loc[0, "region_manager"] == "Larry Hughes"  # EMEA -> AMEA -> manager
     assert out.loc[1, "region_manager"] == "Kelly Williams"
-    assert out.loc[2, "region_manager"] == "Unknown"         # region not in People
+    assert out.loc[2, "region_manager"] == "Unknown"  # region not in People
 
 
 def test_return_flag_by_order_and_market():

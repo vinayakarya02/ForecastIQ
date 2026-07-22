@@ -12,6 +12,7 @@ Models (why each exists):
   - **SARIMA**         : ARIMA + explicit seasonality (period 12 monthly) — fits retail seasonality.
   - **Prophet**        : optional; additive trend/seasonality/holidays (heavy dependency, off by default).
 """
+
 from __future__ import annotations
 
 import warnings
@@ -42,7 +43,7 @@ def _future_index(y: pd.Series, horizon: int) -> pd.DatetimeIndex:
 class BaseForecaster:
     name = "Base"
 
-    def fit(self, y: pd.Series) -> "BaseForecaster":
+    def fit(self, y: pd.Series) -> BaseForecaster:
         raise NotImplementedError
 
     def forecast(self, horizon: int) -> ForecastResult:
@@ -51,6 +52,7 @@ class BaseForecaster:
 
 class NaiveForecaster(BaseForecaster):
     """Forecast = last observed value; intervals widen like a random walk."""
+
     name = "Naive"
 
     def fit(self, y):
@@ -68,6 +70,7 @@ class NaiveForecaster(BaseForecaster):
 
 class MovingAverageForecaster(BaseForecaster):
     """Forecast = mean of the last ``window`` observations (flat)."""
+
     name = "MovingAverage"
 
     def __init__(self, window: int = 3):
@@ -75,7 +78,7 @@ class MovingAverageForecaster(BaseForecaster):
 
     def fit(self, y):
         self.y_ = y
-        self.mean_ = float(y.iloc[-self.window:].mean())
+        self.mean_ = float(y.iloc[-self.window :].mean())
         resid = (y - y.rolling(self.window).mean()).dropna()
         self.sigma_ = float(resid.std(ddof=1)) if len(resid) > 1 else 0.0
         return self
@@ -89,6 +92,7 @@ class MovingAverageForecaster(BaseForecaster):
 
 class LinearRegressionForecaster(BaseForecaster):
     """OLS on trend + seasonality + lag/rolling features, forecast recursively."""
+
     name = "LinearRegression"
 
     def __init__(self, lags=(1, 12), roll_windows=(3,), period: int = 12):
@@ -114,11 +118,12 @@ class LinearRegressionForecaster(BaseForecaster):
         preds = []
         for k in range(horizon):
             period_number = idx[k].quarter if self._quarterly else idx[k].month
-            row = features.feature_row(history, n + k, int(period_number),
-                                       self.lags, self.roll_windows, self.period)
+            row = features.feature_row(
+                history, n + k, int(period_number), self.lags, self.roll_windows, self.period
+            )
             p = float(self.model_.predict([row])[0])
             preds.append(p)
-            history.append(p)          # recursive: prediction feeds the next step's lags
+            history.append(p)  # recursive: prediction feeds the next step's lags
         yhat = np.asarray(preds)
         band = Z95 * self.sigma_ * np.sqrt(np.arange(1, horizon + 1))
         return ForecastResult(idx, yhat, yhat - band, yhat + band)
@@ -144,8 +149,10 @@ class _StatsmodelsForecaster(BaseForecaster):
             mean = fc.predicted_mean
             ci = fc.conf_int(alpha=0.05)
         return ForecastResult(
-            pd.DatetimeIndex(mean.index), mean.to_numpy(dtype=float),
-            ci.iloc[:, 0].to_numpy(dtype=float), ci.iloc[:, 1].to_numpy(dtype=float),
+            pd.DatetimeIndex(mean.index),
+            mean.to_numpy(dtype=float),
+            ci.iloc[:, 0].to_numpy(dtype=float),
+            ci.iloc[:, 1].to_numpy(dtype=float),
         )
 
 
@@ -157,6 +164,7 @@ class ARIMAForecaster(_StatsmodelsForecaster):
 
     def _make(self, y):
         from statsmodels.tsa.arima.model import ARIMA
+
         return ARIMA(y, order=self.order)
 
 
@@ -169,6 +177,7 @@ class SARIMAForecaster(_StatsmodelsForecaster):
 
     def _make(self, y):
         from statsmodels.tsa.statespace.sarimax import SARIMAX
+
         # Keep statsmodels' stability constraints (enforce_stationarity/invertibility=True,
         # the defaults): they bound the forecast and prevent explosive non-stationary output.
         # If a short series can't satisfy them the fit raises and the trainer skips it.
@@ -177,10 +186,12 @@ class SARIMAForecaster(_StatsmodelsForecaster):
 
 class ProphetForecaster(BaseForecaster):
     """Optional Prophet adapter (lazy import; raises if prophet isn't installed)."""
+
     name = "Prophet"
 
     def fit(self, y):
         from prophet import Prophet  # noqa: F401  (raises ImportError if absent)
+
         self.y_ = y
         df = pd.DataFrame({"ds": y.index, "y": y.to_numpy(dtype=float)})
         with warnings.catch_warnings():
@@ -193,8 +204,10 @@ class ProphetForecaster(BaseForecaster):
         future = self.model_.make_future_dataframe(periods=horizon, freq=freq)
         fc = self.model_.predict(future).tail(horizon)
         return ForecastResult(
-            pd.DatetimeIndex(fc["ds"].to_numpy()), fc["yhat"].to_numpy(),
-            fc["yhat_lower"].to_numpy(), fc["yhat_upper"].to_numpy(),
+            pd.DatetimeIndex(fc["ds"].to_numpy()),
+            fc["yhat"].to_numpy(),
+            fc["yhat_lower"].to_numpy(),
+            fc["yhat_upper"].to_numpy(),
         )
 
 
@@ -210,7 +223,9 @@ def build_model_factories(models_cfg: dict, period: int) -> dict[str, callable]:
     if m.get("linear_regression", {}).get("enabled"):
         lags = tuple(m["linear_regression"].get("lags", [1, 12]))
         rw = tuple(m["linear_regression"].get("roll_windows", [3]))
-        factories["LinearRegression"] = lambda lags=lags, rw=rw: LinearRegressionForecaster(lags, rw, period)
+        factories["LinearRegression"] = lambda lags=lags, rw=rw: LinearRegressionForecaster(
+            lags, rw, period
+        )
     if m.get("arima", {}).get("enabled"):
         order = tuple(m["arima"].get("order", [1, 1, 1]))
         factories["ARIMA"] = lambda o=order: ARIMAForecaster(o)

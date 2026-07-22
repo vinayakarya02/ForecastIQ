@@ -7,6 +7,7 @@ Usage:
     python pipelines/run_analytics.py
     python pipelines/run_analytics.py --top 15
 """
+
 from __future__ import annotations
 
 import argparse
@@ -23,18 +24,25 @@ try:
 except Exception:  # pragma: no cover
     pass
 
-from forecastiq.config import Config                       # noqa: E402
-from forecastiq.utils.logger import get_logger             # noqa: E402
-from forecastiq.utils.io import get_engine                 # noqa: E402
-from forecastiq.analytics import (                         # noqa: E402
-    kpis, trends, segmentation, products, regional, returns, insights,
+from forecastiq.analytics import (  # noqa: E402
+    insights,
+    kpis,
+    products,
+    regional,
+    returns,
+    segmentation,
+    trends,
 )
+from forecastiq.config import Config  # noqa: E402
+from forecastiq.utils.io import get_engine  # noqa: E402
+from forecastiq.utils.logger import get_logger  # noqa: E402
 
 
 def _table(df: pd.DataFrame, n: int | None = None) -> str:
     view = df.head(n) if n else df
     try:
         from tabulate import tabulate
+
         return tabulate(view, headers="keys", tablefmt="github", showindex=False, floatfmt=",.2f")
     except ImportError:  # pragma: no cover
         return view.to_string(index=False)
@@ -92,10 +100,14 @@ def main() -> int:
             print(f"   {label:22} {value:,.2f}")
         else:
             print(f"   {label:22} {value:,}")
-    print(f"   {'Repeat Rate Pct':22} {repeat['repeat_rate_pct']:.2f}   "
-          f"({repeat['repeat_customers']:,}/{repeat['total_customers']:,} customers)")
-    print(f"   {'Returned Revenue':22} {ret_tot['returned_revenue']:,.2f}   "
-          f"({ret_tot['returned_revenue_share_pct']:.2f}% of revenue)")
+    print(
+        f"   {'Repeat Rate Pct':22} {repeat['repeat_rate_pct']:.2f}   "
+        f"({repeat['repeat_customers']:,}/{repeat['total_customers']:,} customers)"
+    )
+    print(
+        f"   {'Returned Revenue':22} {ret_tot['returned_revenue']:,.2f}   "
+        f"({ret_tot['returned_revenue_share_pct']:.2f}% of revenue)"
+    )
 
     _section("YEARLY REVENUE & YoY GROWTH")
     print(_table(tables["yearly_revenue"]))
@@ -120,9 +132,11 @@ def main() -> int:
 
 
 def _write_insights_md(path: Path, generated, kpi: dict) -> None:
-    lines = ["# ForecastIQ - Automated Business Insights\n",
-             f"_Total revenue ${kpi['total_revenue']:,.0f} | "
-             f"profit ${kpi['total_profit']:,.0f} | margin {kpi['profit_margin_pct']}%_\n"]
+    lines = [
+        "# ForecastIQ - Automated Business Insights\n",
+        f"_Total revenue ${kpi['total_revenue']:,.0f} | "
+        f"profit ${kpi['total_profit']:,.0f} | margin {kpi['profit_margin_pct']}%_\n",
+    ]
     for ins in generated:
         lines.append(f"### [{ins.category.upper()}] {ins.title}\n{ins.detail}\n")
     path.write_text("\n".join(lines), encoding="utf-8")

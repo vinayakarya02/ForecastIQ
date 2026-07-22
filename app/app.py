@@ -6,19 +6,20 @@ Defines the multipage navigation and renders the global sidebar filters once per
 every analytics page reacts to the same FactScope. All data comes from the existing
 warehouse / analytics / forecasting engines via the cached data-access layer.
 """
+
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # put app/ on the path
 
 import streamlit as st  # noqa: E402
-
 from utils.filters import render_sidebar_filters  # noqa: E402
 from utils.theme import apply_theme  # noqa: E402
 from utils.warehouse import warehouse_exists  # noqa: E402
 
-st.set_page_config(page_title="ForecastIQ", page_icon="📈", layout="wide",
-                   initial_sidebar_state="expanded")
+st.set_page_config(
+    page_title="ForecastIQ", page_icon="📈", layout="wide", initial_sidebar_state="expanded"
+)
 apply_theme()
 
 if not warehouse_exists():

@@ -8,6 +8,7 @@ Usage:
     python pipelines/run_forecast.py
     python pipelines/run_forecast.py --granularity monthly --horizon 6 --series total,by_category
 """
+
 from __future__ import annotations
 
 import argparse
@@ -25,10 +26,10 @@ except Exception:  # pragma: no cover
     pass
 warnings.filterwarnings("ignore")  # statsmodels convergence chatter
 
-from forecastiq.config import Config                       # noqa: E402
-from forecastiq.utils.logger import get_logger             # noqa: E402
-from forecastiq.utils.io import get_engine                 # noqa: E402
+from forecastiq.config import Config  # noqa: E402
 from forecastiq.forecasting import data, models, predictor, visualizations  # noqa: E402
+from forecastiq.utils.io import get_engine  # noqa: E402
+from forecastiq.utils.logger import get_logger  # noqa: E402
 
 
 def _resolve_series(engine, entries: list[str]) -> list[tuple[str, str | None]]:
@@ -67,11 +68,14 @@ def main() -> int:
     entries = args.series.split(",") if args.series else fcfg["series"]
 
     run_id = datetime.now().strftime("fc_%Y%m%d_%H%M%S")
-    logger.info("=== ForecastIQ Forecasting (run_id=%s, %s, horizon=%d) ===", run_id, granularity, horizon)
+    logger.info(
+        "=== ForecastIQ Forecasting (run_id=%s, %s, horizon=%d) ===", run_id, granularity, horizon
+    )
 
     factories = models.build_model_factories(fcfg["models"], period)
-    logger.info("Models: %s | backtest folds: %d | selection: %s",
-                ", ".join(factories), folds, metric)
+    logger.info(
+        "Models: %s | backtest folds: %d | selection: %s", ", ".join(factories), folds, metric
+    )
 
     plan = _resolve_series(engine, entries)
     predictor.clear_forecasts(engine)
@@ -81,24 +85,44 @@ def main() -> int:
         sid = data.series_id(level, key)
         y = data.build_series(engine, target, granularity, level, key)
         if len(y) < folds * horizon + 3:
-            logger.warning("Skipping %s: only %d periods (need >= %d)", sid, len(y), folds * horizon + 3)
+            logger.warning(
+                "Skipping %s: only %d periods (need >= %d)", sid, len(y), folds * horizon + 3
+            )
             continue
         sf = predictor.forecast_series(
-            y, factories, horizon=horizon, n_folds=folds, selection_metric=metric,
-            series_id=sid, granularity=granularity)
+            y,
+            factories,
+            horizon=horizon,
+            n_folds=folds,
+            selection_metric=metric,
+            series_id=sid,
+            granularity=granularity,
+        )
         predictor.persist(engine, sf, run_id)
         results.append(sf)
 
         best_m = sf.metrics.get(sf.best_model, {})
-        summary_rows.append({"series_id": sid, "best_model": sf.best_model,
-                             "mape": best_m.get("mape"), "rmse": best_m.get("rmse"),
-                             "r2": best_m.get("r2"), "models_compared": len(sf.metrics)})
+        summary_rows.append(
+            {
+                "series_id": sid,
+                "best_model": sf.best_model,
+                "mape": best_m.get("mape"),
+                "rmse": best_m.get("rmse"),
+                "r2": best_m.get("r2"),
+                "models_compared": len(sf.metrics),
+            }
+        )
         for i, ts in enumerate(sf.forecast.index):
-            forecast_rows.append({"series_id": sid, "model": sf.best_model,
-                                  "period_start": pd.Timestamp(ts).strftime("%Y-%m-%d"),
-                                  "yhat": round(float(sf.forecast.yhat[i]), 2),
-                                  "yhat_lower": round(float(sf.forecast.yhat_lower[i]), 2),
-                                  "yhat_upper": round(float(sf.forecast.yhat_upper[i]), 2)})
+            forecast_rows.append(
+                {
+                    "series_id": sid,
+                    "model": sf.best_model,
+                    "period_start": pd.Timestamp(ts).strftime("%Y-%m-%d"),
+                    "yhat": round(float(sf.forecast.yhat[i]), 2),
+                    "yhat_lower": round(float(sf.forecast.yhat_lower[i]), 2),
+                    "yhat_upper": round(float(sf.forecast.yhat_upper[i]), 2),
+                }
+            )
 
     if not results:
         logger.error("No series forecast — check the warehouse and config.")
@@ -109,7 +133,10 @@ def main() -> int:
     print("\n" + "=" * 78 + "\nMODEL SELECTION SUMMARY\n" + "=" * 78)
     try:
         from tabulate import tabulate
-        print(tabulate(summary, headers="keys", tablefmt="github", showindex=False, floatfmt=",.2f"))
+
+        print(
+            tabulate(summary, headers="keys", tablefmt="github", showindex=False, floatfmt=",.2f")
+        )
     except ImportError:
         print(summary.to_string(index=False))
     won = summary["best_model"].value_counts().to_dict()
@@ -120,11 +147,16 @@ def main() -> int:
     fig_dir = cfg.path("paths", "figures_dir")
     y_total = total_sf.history
     paths = [
-        visualizations.plot_actual_vs_forecast(total_sf, fig_dir / "forecast_actual_vs_forecast.png"),
+        visualizations.plot_actual_vs_forecast(
+            total_sf, fig_dir / "forecast_actual_vs_forecast.png"
+        ),
         visualizations.plot_residual_analysis(total_sf, fig_dir / "forecast_residuals.png"),
-        visualizations.plot_model_comparison(total_sf, fig_dir / "forecast_model_comparison.png", metric),
-        visualizations.plot_forecast_comparison(y_total, factories, horizon,
-                                                fig_dir / "forecast_comparison.png"),
+        visualizations.plot_model_comparison(
+            total_sf, fig_dir / "forecast_model_comparison.png", metric
+        ),
+        visualizations.plot_forecast_comparison(
+            y_total, factories, horizon, fig_dir / "forecast_comparison.png"
+        ),
     ]
     logger.info("Saved %d figures to %s", len(paths), fig_dir)
 

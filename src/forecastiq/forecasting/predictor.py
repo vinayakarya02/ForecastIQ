@@ -4,6 +4,7 @@ Ties the pieces together: backtest a series, refit the winning model on the full
 history, produce the forward forecast with intervals, and write forecasts + metrics +
 the selected model back into the warehouse.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -23,24 +24,39 @@ class SeriesForecast:
     series_id: str
     granularity: str
     best_model: str
-    metrics: dict            # model name -> metric dict
-    failures: dict           # model name -> error
+    metrics: dict  # model name -> metric dict
+    failures: dict  # model name -> error
     history: pd.Series
     forecast: ForecastResult
-    backtest: pd.DataFrame | None = None   # best model's out-of-sample (period, actual, predicted)
+    backtest: pd.DataFrame | None = None  # best model's out-of-sample (period, actual, predicted)
 
 
-def forecast_series(y: pd.Series, model_factories: dict[str, callable], *, horizon: int,
-                    n_folds: int, selection_metric: str, series_id: str,
-                    granularity: str) -> SeriesForecast:
+def forecast_series(
+    y: pd.Series,
+    model_factories: dict[str, callable],
+    *,
+    horizon: int,
+    n_folds: int,
+    selection_metric: str,
+    series_id: str,
+    granularity: str,
+) -> SeriesForecast:
     """Backtest, pick the best model, refit on full history, and forecast ``horizon`` ahead."""
     bt = trainer.rolling_origin_backtest(y, model_factories, horizon, n_folds, selection_metric)
     if bt.best is None:
         raise RuntimeError(f"No model could be fit for series '{series_id}': {bt.failures}")
-    best = model_factories[bt.best]().fit(y)          # refit winner on ALL history
+    best = model_factories[bt.best]().fit(y)  # refit winner on ALL history
     fc = best.forecast(horizon)
-    return SeriesForecast(series_id, granularity, bt.best, bt.metrics, bt.failures, y, fc,
-                          backtest=bt.predictions.get(bt.best))
+    return SeriesForecast(
+        series_id,
+        granularity,
+        bt.best,
+        bt.metrics,
+        bt.failures,
+        y,
+        fc,
+        backtest=bt.predictions.get(bt.best),
+    )
 
 
 def clear_forecasts(engine: Engine) -> None:
@@ -56,28 +72,52 @@ def persist(engine: Engine, sf: SeriesForecast, run_id: str) -> None:
 
     rows = []
     for period, value in sf.history.items():
-        rows.append({
-            "run_id": run_id, "series_id": sf.series_id, "granularity": sf.granularity,
-            "model_name": sf.best_model, "period_start": pd.Timestamp(period).strftime("%Y-%m-%d"),
-            "yhat": float(value), "yhat_lower": None, "yhat_upper": None,
-            "is_actual": 1, "created_at": now,
-        })
+        rows.append(
+            {
+                "run_id": run_id,
+                "series_id": sf.series_id,
+                "granularity": sf.granularity,
+                "model_name": sf.best_model,
+                "period_start": pd.Timestamp(period).strftime("%Y-%m-%d"),
+                "yhat": float(value),
+                "yhat_lower": None,
+                "yhat_upper": None,
+                "is_actual": 1,
+                "created_at": now,
+            }
+        )
     fc = sf.forecast
     for i, period in enumerate(fc.index):
-        rows.append({
-            "run_id": run_id, "series_id": sf.series_id, "granularity": sf.granularity,
-            "model_name": sf.best_model, "period_start": pd.Timestamp(period).strftime("%Y-%m-%d"),
-            "yhat": float(fc.yhat[i]), "yhat_lower": float(fc.yhat_lower[i]),
-            "yhat_upper": float(fc.yhat_upper[i]), "is_actual": 0, "created_at": now,
-        })
+        rows.append(
+            {
+                "run_id": run_id,
+                "series_id": sf.series_id,
+                "granularity": sf.granularity,
+                "model_name": sf.best_model,
+                "period_start": pd.Timestamp(period).strftime("%Y-%m-%d"),
+                "yhat": float(fc.yhat[i]),
+                "yhat_lower": float(fc.yhat_lower[i]),
+                "yhat_upper": float(fc.yhat_upper[i]),
+                "is_actual": 0,
+                "created_at": now,
+            }
+        )
     df_to_table(pd.DataFrame(rows), "forecast_results", engine)
 
     metric_rows = []
     for name, m in sf.metrics.items():
-        metric_rows.append({
-            "run_id": run_id, "series_id": sf.series_id, "model_name": name,
-            "rmse": m.get("rmse"), "mae": m.get("mae"), "mape": m.get("mape"), "r2": m.get("r2"),
-            "is_best": int(name == sf.best_model), "created_at": now,
-        })
+        metric_rows.append(
+            {
+                "run_id": run_id,
+                "series_id": sf.series_id,
+                "model_name": name,
+                "rmse": m.get("rmse"),
+                "mae": m.get("mae"),
+                "mape": m.get("mape"),
+                "r2": m.get("r2"),
+                "is_best": int(name == sf.best_model),
+                "created_at": now,
+            }
+        )
     if metric_rows:
         df_to_table(pd.DataFrame(metric_rows), "model_metrics", engine)

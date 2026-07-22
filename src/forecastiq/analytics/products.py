@@ -1,4 +1,5 @@
 """Product analytics — category, sub-category and product performance."""
+
 from __future__ import annotations
 
 import pandas as pd
@@ -29,7 +30,8 @@ def category_performance(engine: Engine) -> pd.DataFrame:
 def subcategory_performance(engine: Engine) -> pd.DataFrame:
     """Performance by category → sub-category."""
     return read(
-        engine, _PERF_SQL.format(select="p.category, p.sub_category,", group="p.category, p.sub_category")
+        engine,
+        _PERF_SQL.format(select="p.category, p.sub_category,", group="p.category, p.sub_category"),
     )
 
 

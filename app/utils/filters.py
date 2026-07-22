@@ -4,6 +4,7 @@ Rendered once per run from the app entrypoint so the filters appear on every pag
 Pages read the active scope with ``current_scope()`` (defaults to an empty, unfiltered
 scope when the app is run page-standalone, e.g. under test).
 """
+
 from __future__ import annotations
 
 import streamlit as st
@@ -11,8 +12,15 @@ import streamlit as st
 from .scope import FactScope
 from .warehouse import filter_options
 
-_KEYS = ["f_years", "f_markets", "f_regions", "f_countries",
-         "f_categories", "f_subcats", "f_segments"]
+_KEYS = [
+    "f_years",
+    "f_markets",
+    "f_regions",
+    "f_countries",
+    "f_categories",
+    "f_subcats",
+    "f_segments",
+]
 
 
 def _reset() -> None:
@@ -37,9 +45,13 @@ def render_sidebar_filters() -> FactScope:
     sb.button("Reset filters", on_click=_reset, width="stretch")
 
     scope = FactScope(
-        years=tuple(years), markets=tuple(markets), regions=tuple(regions),
-        countries=tuple(countries), categories=tuple(categories),
-        sub_categories=tuple(sub_categories), segments=tuple(segments),
+        years=tuple(years),
+        markets=tuple(markets),
+        regions=tuple(regions),
+        countries=tuple(countries),
+        categories=tuple(categories),
+        sub_categories=tuple(sub_categories),
+        segments=tuple(segments),
     )
     st.session_state["scope"] = scope
     sb.caption("Filters apply across every analytics page.")

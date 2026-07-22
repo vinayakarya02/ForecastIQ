@@ -1,4 +1,5 @@
 """Stage 2 — Clean: normalize strings, coerce numerics, dedupe, drop broken rows."""
+
 from __future__ import annotations
 
 import pandas as pd

@@ -9,6 +9,7 @@ Builds a supervised design matrix from a univariate series using:
 The same row-builder is used for training and for recursive multi-step forecasting,
 so features are identical in both paths.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -16,8 +17,11 @@ import pandas as pd
 
 
 def feature_names(lags, roll_windows) -> list[str]:
-    return ["trend", "season_sin", "season_cos"] + \
-           [f"lag_{L}" for L in lags] + [f"roll_{w}" for w in roll_windows]
+    return (
+        ["trend", "season_sin", "season_cos"]
+        + [f"lag_{L}" for L in lags]
+        + [f"roll_{w}" for w in roll_windows]
+    )
 
 
 def _seasonal(period_number: int, period: int) -> tuple[float, float]:
@@ -26,7 +30,9 @@ def _seasonal(period_number: int, period: int) -> tuple[float, float]:
     return float(np.sin(angle)), float(np.cos(angle))
 
 
-def feature_row(history, t: int, period_number: int, lags, roll_windows, period: int) -> list[float]:
+def feature_row(
+    history, t: int, period_number: int, lags, roll_windows, period: int
+) -> list[float]:
     """Feature vector for one position, given the values *before* it (``history``)."""
     sin, cos = _seasonal(period_number, period)
     row = [float(t), sin, cos]
@@ -35,7 +41,9 @@ def feature_row(history, t: int, period_number: int, lags, roll_windows, period:
     return row
 
 
-def make_supervised(y: pd.Series, lags, roll_windows, period: int) -> tuple[pd.DataFrame, np.ndarray]:
+def make_supervised(
+    y: pd.Series, lags, roll_windows, period: int
+) -> tuple[pd.DataFrame, np.ndarray]:
     """Build (X, target) for supervised learning from series ``y``.
 
     Rows before enough history exists (``max(lags, roll_windows)``) are dropped.

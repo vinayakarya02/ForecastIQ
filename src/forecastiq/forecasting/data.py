@@ -5,6 +5,7 @@ aggregation level (total, category, region, market, product) and grain
 (monthly or quarterly). Missing periods are gap-filled so models see a regular
 frequency index.
 """
+
 from __future__ import annotations
 
 import pandas as pd
@@ -16,16 +17,21 @@ _ALLOWED_TARGETS = {"sales", "quantity", "profit"}
 # level -> (join clause, filter column)
 _LEVEL = {
     "category": ("JOIN dim_product p ON f.product_key = p.product_key", "p.category"),
-    "product":  ("JOIN dim_product p ON f.product_key = p.product_key", "p.product_id"),
-    "region":   ("JOIN dim_region r ON f.region_key = r.region_key", "r.region"),
-    "market":   ("JOIN dim_region r ON f.region_key = r.region_key", "r.market"),
+    "product": ("JOIN dim_product p ON f.product_key = p.product_key", "p.product_id"),
+    "region": ("JOIN dim_region r ON f.region_key = r.region_key", "r.region"),
+    "market": ("JOIN dim_region r ON f.region_key = r.region_key", "r.market"),
 }
 
 _FREQ = {"monthly": "MS", "quarterly": "QS"}
 
 
-def build_series(engine: Engine, target: str = "sales", granularity: str = "monthly",
-                 level: str = "total", key: str | None = None) -> pd.Series:
+def build_series(
+    engine: Engine,
+    target: str = "sales",
+    granularity: str = "monthly",
+    level: str = "total",
+    key: str | None = None,
+) -> pd.Series:
     """Return a gap-filled time series for one slice of the business.
 
     Parameters
@@ -66,7 +72,7 @@ def build_series(engine: Engine, target: str = "sales", granularity: str = "mont
         return pd.Series(dtype=float, name=target)
 
     s = pd.Series(df["value"].to_numpy(dtype=float), index=pd.to_datetime(df["period_start"]))
-    s = s.asfreq("MS").fillna(0.0)            # continuous monthly grid; missing months -> 0
+    s = s.asfreq("MS").fillna(0.0)  # continuous monthly grid; missing months -> 0
     if granularity == "quarterly":
         s = s.resample("QS").sum()
     s.name = target

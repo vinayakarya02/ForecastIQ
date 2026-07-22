@@ -1,8 +1,8 @@
 """Page layout helpers: headers, section titles, and the active-filter banner."""
+
 from __future__ import annotations
 
 import streamlit as st
-
 from utils.scope import FactScope
 
 
@@ -26,7 +26,11 @@ def scope_banner(scope: FactScope) -> None:
 
 def empty_guard(df, message: str = "No data for the current filters.") -> bool:
     """Return True (and show a message) when a result is empty, so pages can bail early."""
-    if df is None or (hasattr(df, "empty") and df.empty) or (hasattr(df, "__len__") and len(df) == 0):
+    if (
+        df is None
+        or (hasattr(df, "empty") and df.empty)
+        or (hasattr(df, "__len__") and len(df) == 0)
+    ):
         st.warning(message)
         return True
     return False
