@@ -55,6 +55,12 @@ class Config:
         rel = os.getenv("FORECASTIQ_RAW_CSV") or self._data["paths"]["raw_csv"]
         return self._resolve(rel)
 
+    @property
+    def source_path(self) -> Path:
+        """Resolved data-source path; env ``FORECASTIQ_SOURCE_PATH`` overrides config."""
+        rel = os.getenv("FORECASTIQ_SOURCE_PATH") or self._data["source"]["path"]
+        return self._resolve(rel)
+
     def path(self, *keys) -> Path:
         """Resolve a nested path value from config to an absolute Path."""
         node = self._data

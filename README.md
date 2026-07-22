@@ -92,6 +92,11 @@ streamlit run app/app.py            # 4. explore at http://localhost:8501
 ```
 With `make`: `make install && make pipeline && make app`.
 
+> **No dataset? Just run `streamlit run app/app.py`.** The app **self-provisions** — if no dataset is
+> present it builds a labelled synthetic sample warehouse on first launch, so it deploys to Streamlit
+> Community Cloud with zero manual steps. Drop the real `.xls` in `data/raw/` for actual figures.
+> See [`docs/deployment.md`](docs/deployment.md).
+
 ## 📦 Installation
 
 Requires **Python 3.10+**. Install the package with the app extra (`.[app]`) or the pinned list

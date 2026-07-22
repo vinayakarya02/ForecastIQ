@@ -114,7 +114,7 @@ def extract(cfg: Config, logger=None) -> pd.DataFrame:
     stype = src.get("type", "csv")
 
     if stype == "excel":
-        path = cfg.path("source", "path")
+        path = cfg.source_path
         if logger:
             logger.info("Reading Excel workbook: %s", path.name)
         book = pd.read_excel(path, sheet_name=None)  # dict of all sheets

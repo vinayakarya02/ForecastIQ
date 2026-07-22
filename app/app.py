@@ -15,20 +15,20 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # put app/ on the path
 import streamlit as st  # noqa: E402
 from utils.filters import render_sidebar_filters  # noqa: E402
 from utils.theme import apply_theme  # noqa: E402
-from utils.warehouse import warehouse_exists  # noqa: E402
+from utils.warehouse import bootstrap_warehouse  # noqa: E402
 
 st.set_page_config(
     page_title="ForecastIQ", page_icon="📈", layout="wide", initial_sidebar_state="expanded"
 )
 apply_theme()
 
-if not warehouse_exists():
+# Self-provision on first run: build the warehouse if missing (real dataset if present,
+# otherwise a generated synthetic sample) so the app works with zero manual steps.
+try:
+    _data_mode = bootstrap_warehouse()
+except Exception as exc:  # noqa: BLE001 - surface bootstrap failures cleanly
     st.title("📈 ForecastIQ")
-    st.error(
-        "**Warehouse not found.** Build it first:\n\n"
-        "```bash\npython pipelines/run_etl.py\npython pipelines/run_forecast.py\n```",
-        icon="🗄️",
-    )
+    st.error(f"Could not initialise the warehouse: {exc}", icon="🗄️")
     st.stop()
 
 PAGES = [
@@ -46,6 +46,10 @@ PAGES = [
 
 nav = st.navigation(PAGES)
 render_sidebar_filters()
+if _data_mode == "sample":
+    st.sidebar.warning(
+        "Demo on **generated sample data** — add the real dataset for actual figures.", icon="🧪"
+    )
 st.sidebar.divider()
 st.sidebar.caption("ForecastIQ · AI-Powered Sales Forecasting & BI")
 nav.run()

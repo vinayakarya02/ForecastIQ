@@ -43,6 +43,18 @@ def base_engine() -> Engine:
     return get_engine(_config().db_url)
 
 
+@st.cache_resource(show_spinner="Preparing the warehouse (first run only)…")
+def bootstrap_warehouse() -> str:
+    """Build the warehouse on first run if it's missing. Returns the data mode.
+
+    'existing' | 'real' (built from the dataset) | 'sample' (built from generated data).
+    Runs once per process thanks to cache_resource.
+    """
+    from forecastiq.bootstrap import ensure_warehouse
+
+    return ensure_warehouse(_config())
+
+
 @st.cache_resource(show_spinner=False)
 def _scoped_engine(scope: FactScope) -> Engine:
     """Build a filtered in-memory warehouse for ``scope`` (cached per scope)."""
