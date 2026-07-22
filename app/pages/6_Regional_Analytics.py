@@ -80,6 +80,7 @@ charts.show(
         orientation="h",
         color="market",
         labels={"revenue": "Revenue ($)", "region": ""},
+        legend=True,
     )
 )
 

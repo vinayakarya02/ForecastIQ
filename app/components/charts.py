@@ -1,4 +1,9 @@
-"""Styled Plotly chart builders. Each returns a figure; call ``show`` to render."""
+"""Styled Plotly chart builders. Each returns a figure; call ``show`` to render.
+
+Legends sit below the plot (via the shared layout) so they never overlap titles.
+``legend`` hides the legend where it would merely restate the axis (e.g. a bar coloured
+by its own category); pass ``legend=True`` only when the colour encodes a second field.
+"""
 
 from __future__ import annotations
 
@@ -6,7 +11,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-from utils.theme import ACCENT, PRIMARY, style_fig
+from utils.theme import ACCENT, PALETTE, PRIMARY, style_fig
 
 
 def show(fig) -> None:
@@ -20,10 +25,20 @@ def line(
     title: str = "",
     color: str | None = None,
     labels: dict | None = None,
+    legend: bool | None = None,
 ):
-    fig = px.line(df, x=x, y=y, title=title, color=color, labels=labels, markers=False)
+    fig = px.line(
+        df,
+        x=x,
+        y=y,
+        title=title,
+        color=color,
+        labels=labels,
+        markers=False,
+        color_discrete_sequence=PALETTE,
+    )
     fig.update_traces(line=dict(width=2.4))
-    return style_fig(fig)
+    return style_fig(fig, show_legend=legend)
 
 
 def bar(
@@ -35,18 +50,30 @@ def bar(
     orientation: str = "v",
     labels: dict | None = None,
     text=None,
+    legend: bool = False,
 ):
     fig = px.bar(
-        df, x=x, y=y, title=title, color=color, orientation=orientation, labels=labels, text=text
+        df,
+        x=x,
+        y=y,
+        title=title,
+        color=color,
+        orientation=orientation,
+        labels=labels,
+        text=text,
+        color_discrete_sequence=PALETTE,
     )
     fig.update_traces(marker_line_width=0)
-    return style_fig(fig)
+    return style_fig(fig, show_legend=legend)
 
 
 def donut(df: pd.DataFrame, names: str, values: str, title: str = ""):
-    fig = px.pie(df, names=names, values=values, title=title, hole=0.55)
-    fig.update_traces(textposition="inside", textinfo="percent+label")
-    return style_fig(fig)
+    fig = px.pie(
+        df, names=names, values=values, title=title, hole=0.58, color_discrete_sequence=PALETTE
+    )
+    # Percent on the slices; the category names live in the (bottom) legend — no clutter.
+    fig.update_traces(textposition="inside", textinfo="percent", insidetextorientation="horizontal")
+    return style_fig(fig, show_legend=True)
 
 
 def forecast_chart(

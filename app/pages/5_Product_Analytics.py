@@ -74,6 +74,7 @@ if not sub.empty:
             orientation="h",
             color="category",
             labels={"revenue": "Revenue ($)", "sub_category": ""},
+            legend=True,
         )
     )
 

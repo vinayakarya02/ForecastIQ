@@ -72,18 +72,18 @@ metric = st.radio(
 sub = mm[mm["series_id"] == series].dropna(subset=[metric]).copy()
 ascending = metric != "r2"
 sub = sub.sort_values(metric, ascending=ascending)
-sub["is_best"] = sub["is_best"].astype(bool)
+sub["Model"] = sub["is_best"].map({1: "Selected", 0: "Others"})
 fig = px.bar(
     sub,
     x="model_name",
     y=metric,
-    color="is_best",
-    color_discrete_map={True: ACCENT, False: MUTED},
-    title=f"{series} — {metric.upper()} by model "
-    f"({'higher is better' if metric == 'r2' else 'lower is better'})",
-    labels={"model_name": "", metric: metric.upper(), "is_best": "Selected"},
+    color="Model",
+    color_discrete_map={"Selected": ACCENT, "Others": MUTED},
+    category_orders={"Model": ["Selected", "Others"]},
+    title=f"{metric.upper()} by model ({'higher' if metric == 'r2' else 'lower'} is better)",
+    labels={"model_name": "", metric: metric.upper()},
 )
-charts.show(style_fig(fig))
+charts.show(style_fig(fig, show_legend=True))
 
 st.dataframe(
     sub[["model_name", "rmse", "mae", "mape", "r2"]].rename(

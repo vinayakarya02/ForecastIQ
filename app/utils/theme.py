@@ -18,15 +18,27 @@ PALETTE = ["#2563eb", "#f59e0b", "#16a34a", "#dc2626", "#7c3aed", "#0891b2", "#d
 PLOTLY_LAYOUT = dict(
     template="plotly_white",
     font=dict(family="Inter, Segoe UI, sans-serif", size=13, color="#1e293b"),
-    margin=dict(l=10, r=10, t=48, b=10),
+    margin=dict(l=14, r=18, t=58, b=54),
+    # Title pinned top-left with its own space above the plot.
+    title=dict(x=0.01, xanchor="left", y=0.98, yanchor="top", font=dict(size=15, color="#0f172a")),
     hoverlabel=dict(font_size=12),
     colorway=PALETTE,
-    legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
+    # Legend sits BELOW the plot (never overlaps the title on top or the axes).
+    legend=dict(
+        orientation="h",
+        yanchor="top",
+        y=-0.24,
+        x=0.5,
+        xanchor="center",
+        font=dict(size=11),
+        title_text="",
+    ),
+    autosize=True,
 )
 
 _CSS = """
 <style>
-  .block-container { padding-top: 2.2rem; padding-bottom: 2rem; max-width: 1250px; }
+  .block-container { padding-top: 2rem; padding-bottom: 2rem; max-width: 1280px; }
   h1, h2, h3 { font-family: 'Inter','Segoe UI',sans-serif; letter-spacing:-0.01em; }
   /* KPI card */
   .kpi-card {
@@ -55,6 +67,20 @@ _CSS = """
   .nav-card:hover { border-color:#2563eb; }
   .nav-card .t { font-weight:700; color:#0f172a; }
   .nav-card .d { color:#64748b; font-size:.85rem; margin-top:4px; }
+  /* Keep long KPI values from overflowing their card */
+  .kpi-value { overflow-wrap:anywhere; }
+  /* Responsive: shrink KPI text so cards don't crowd/clip on tablet & mobile */
+  @media (max-width: 900px) {
+    .kpi-value { font-size:1.28rem; }
+    .kpi-card  { padding:12px 14px; }
+  }
+  @media (max-width: 640px) {
+    .block-container { padding-left:.7rem; padding-right:.7rem; }
+    .kpi-value { font-size:1.12rem; }
+    .kpi-label { font-size:.7rem; }
+    .hero { padding:20px 18px; }
+    .hero h1 { font-size:1.6rem; }
+  }
 </style>
 """
 
@@ -64,7 +90,15 @@ def apply_theme() -> None:
     st.markdown(_CSS, unsafe_allow_html=True)
 
 
-def style_fig(fig):
-    """Apply the shared Plotly layout to a figure and return it."""
+def style_fig(fig, show_legend: bool | None = None):
+    """Apply the shared Plotly layout to a figure and return it.
+
+    ``show_legend`` overrides legend visibility (charts hide it when it would just
+    restate the axis). ``automargin`` keeps axis labels from being clipped.
+    """
     fig.update_layout(**PLOTLY_LAYOUT)
+    fig.update_xaxes(automargin=True, title_font=dict(size=12))
+    fig.update_yaxes(automargin=True, title_font=dict(size=12))
+    if show_legend is not None:
+        fig.update_layout(showlegend=show_legend)
     return fig
