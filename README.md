@@ -33,8 +33,8 @@ B2B). The reference implementation uses the public
 Most analytics side projects stop at a single notebook. ForecastIQ instead covers the full lifecycle a
 data/analytics engineer owns: reliable ingestion with data-quality gates, a dimensional warehouse, reusable
 analytics, honest forecasting with backtesting, and a real app on top — tested, linted, documented, and
-deployable. No dataset is committed; the app runs on the real data if you add it, or on a clearly labelled
-generated sample if you don't.
+deployable. The real Global Superstore dataset ships with the repo, so a fresh clone — or a cloud deploy —
+runs on real data out of the box; a generated sample stands in only if the dataset is ever removed.
 
 ## Features
 
@@ -73,7 +73,7 @@ git clone https://github.com/vinayakarya02/ForecastIQ.git && cd ForecastIQ
 python -m venv .venv && . .venv/Scripts/activate          # Unix: source .venv/bin/activate
 pip install -e ".[app]"
 
-python pipelines/run_etl.py         # 1. build the warehouse (generates a sample if no dataset)
+python pipelines/run_etl.py         # 1. build the warehouse from the bundled dataset
 python pipelines/run_analytics.py   # 2. KPIs, segments, insights -> reports/analytics/
 python pipelines/run_forecast.py    # 3. backtest, select, forecast -> warehouse
 streamlit run app/app.py            # 4. explore at http://localhost:8501
@@ -81,10 +81,9 @@ streamlit run app/app.py            # 4. explore at http://localhost:8501
 
 With `make`: `make install && make pipeline && make app`.
 
-You can also just run `streamlit run app/app.py` on a fresh clone — the app builds its warehouse on first
-launch, using a labelled synthetic sample if no dataset is present, so it deploys to Streamlit Community
-Cloud with no manual steps. Drop the real `Global Superstore.xls` in `data/raw/` for actual figures. See
-[`docs/deployment.md`](docs/deployment.md).
+You can also just run `streamlit run app/app.py` on a fresh clone — the app builds its warehouse from the
+bundled dataset on first launch, so it deploys to Streamlit Community Cloud with no manual steps (a generated
+sample is used only if the dataset is ever missing). See [`docs/deployment.md`](docs/deployment.md).
 
 ## Installation
 
@@ -108,7 +107,7 @@ ForecastIQ/
 ├── notebooks/            # exploratory analysis notebook
 ├── tests/                # engine tests on fixtures + Streamlit AppTest page checks
 ├── docs/                 # architecture, methodology, installation, deployment, release
-└── data/ · reports/      # git-ignored dataset & generated outputs
+└── data/ · reports/      # bundled dataset · generated outputs (git-ignored)
 ```
 
 ## Analytics methodology

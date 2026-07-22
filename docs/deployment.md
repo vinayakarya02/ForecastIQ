@@ -1,28 +1,27 @@
 # ForecastIQ — Deployment
 
 The app **self-provisions**: on first start it builds the warehouse if it's missing, so it runs anywhere
-with **zero manual steps** — including a fresh clone on Streamlit Community Cloud where the dataset is absent.
+with **zero manual steps** — including a fresh clone on Streamlit Community Cloud.
 
-## Data provisioning — the decision
+## Data provisioning
 
-The source dataset (Global Superstore) is **git-ignored and never committed**: its licensing (a Kaggle
-re-upload of a Tableau sample) does not explicitly permit redistribution, so committing it — raw or as a
-derived database — is avoided. A fresh clone therefore has no data.
+The real **Global Superstore** dataset is committed to the repo at `data/raw/Global Superstore.xls`
+(Tableau's fictional demo dataset — no real company or personal data), so a fresh clone builds the **real**
+warehouse automatically with no upload or configuration. A synthetic sample is kept only as a fallback for
+the case where the dataset is genuinely missing.
 
-To keep the deployed demo runnable and licensing-clean, ForecastIQ resolves its data source at startup
-(`forecastiq.bootstrap.ensure_warehouse`):
+The data source is resolved at startup (`forecastiq.bootstrap.ensure_warehouse`):
 
 | Condition | Behaviour | Data mode |
 |-----------|-----------|-----------|
-| Warehouse (`forecastiq.db`) already exists | use it as-is | `existing` |
+| Warehouse (`forecastiq.db`) already exists | use it as-is (rebuilt from the dataset if it was a sample) | `existing` / `real` |
 | Real dataset present at `data/raw/Global Superstore.xls` | build ETL + forecasts from it | `real` |
-| No dataset present | **generate a synthetic sample workbook**, then build from it | `sample` |
+| No dataset present | generate a synthetic sample workbook, then build from it | `sample` |
 
-The synthetic sample is fully generated (deterministic, ~1,960 rows, 36 months, 3 categories, 3 markets,
-6 regions, returns, managers) — enough to exercise every page and the forecasting engine. The app shows a
-clear **"Demo on generated sample data"** banner in that mode. Drop the real `.xls` in `data/raw/` (or mount
-it) to see actual Global Superstore figures. This keeps the repo free of copyrighted data while guaranteeing
-a working demo.
+Provenance is recorded in a `warehouse_meta` table. If a warehouse was ever built from the sample and the
+real dataset later becomes available, it is **refreshed from the real data** on the next start. The
+**"Demo on generated sample data"** banner appears only in `sample` mode — i.e. only when the dataset is
+absent, which is not the case for the committed repo.
 
 Bootstrap runs **once** per process (cached with `st.cache_resource`); first load takes ~10–15 s while the
 warehouse builds, then every page is instant.
@@ -30,25 +29,24 @@ warehouse builds, then every page is instant.
 ## Run locally
 ```bash
 pip install -e ".[app]"          # or: pip install -r requirements.txt
-streamlit run app/app.py         # http://localhost:8501  (builds the warehouse on first run)
+streamlit run app/app.py         # http://localhost:8501  (builds the real warehouse on first run)
 ```
-Add `data/raw/Global Superstore.xls` first for real figures; otherwise it starts on generated sample data.
 
 ## Streamlit Community Cloud  ✅ zero-touch
-1. Push the repo to GitHub (already public).
+1. Push the repo to GitHub (already public, dataset included).
 2. On <https://share.streamlit.io> → **New app** → repo `vinayakarya02/ForecastIQ`, branch `main`,
    **main file `app/app.py`**.
-3. Deploy. Streamlit installs `requirements.txt`, runs `app/app.py`, and the app **builds a sample warehouse
-   on first load automatically** — no dataset upload, no build step, no secrets required.
+3. Deploy. Streamlit installs `requirements.txt`, runs `app/app.py`, and the app **builds the real
+   warehouse from the committed dataset on first load** — no upload, no build step, no secrets required.
 
-Optional: to serve real figures, add the dataset to the repo/storage or point `FORECASTIQ_DB_URL`
-(via `.streamlit/secrets.toml`, see `secrets.toml.example`) at a hosted database.
+To point at a hosted database instead of the on-disk SQLite file, set `FORECASTIQ_DB_URL`
+(via `.streamlit/secrets.toml`, see `secrets.toml.example`).
 
 ## Docker
 ```bash
 docker build -t forecastiq .
-docker run -p 8501:8501 forecastiq                       # starts on generated sample data
-docker run -p 8501:8501 -v "$(pwd)/data:/app/data" forecastiq   # uses your dataset if mounted
+docker run -p 8501:8501 forecastiq                              # builds from the bundled dataset
+docker run -p 8501:8501 -v "$(pwd)/data:/app/data" forecastiq   # or mount your own data/
 ```
 The entrypoint runs `pipelines/bootstrap.py` (builds the warehouse if missing) then launches Streamlit.
 
@@ -64,5 +62,5 @@ CWD-independent. Secrets (`.streamlit/secrets.toml`) are git-ignored.
 
 ## Health & smoke test
 - Health endpoint: `GET /_stcore/health` → `200`.
-- Manual bootstrap: `python pipelines/bootstrap.py` → prints `Warehouse ready (…​ data).`
+- Manual bootstrap: `python pipelines/bootstrap.py` → prints `Warehouse source: …`.
 - Page smoke tests: `pytest tests/test_app_pages.py` (renders all 10 pages via Streamlit's AppTest).

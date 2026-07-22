@@ -44,3 +44,6 @@ Thumbs.db
 *.xlsx
 *.csv
 .streamlit/secrets.toml
+
+# ---- Reference dataset: committed on purpose so the deployed app uses real data ----
+!data/raw/Global Superstore.xls

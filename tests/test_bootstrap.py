@@ -45,3 +45,28 @@ def test_ensure_warehouse_existing_short_circuits(tmp_path, monkeypatch):
     db.write_bytes(b"")  # pretend a warehouse already exists
     monkeypatch.setenv("FORECASTIQ_DB_URL", f"sqlite:///{db.as_posix()}")
     assert bootstrap.ensure_warehouse(Config.load()) == "existing"
+
+
+def test_ensure_warehouse_refreshes_sample_to_real(tmp_path, monkeypatch):
+    db = tmp_path / "w.db"
+    monkeypatch.setenv("FORECASTIQ_DB_URL", f"sqlite:///{db.as_posix()}")
+
+    # 1) No dataset present -> builds from the generated sample and records it.
+    monkeypatch.setenv("FORECASTIQ_SOURCE_PATH", str(tmp_path / "absent.xls"))
+    assert (
+        bootstrap.ensure_warehouse(
+            Config.load(), with_forecast=False, sample_path=tmp_path / "sample.xlsx"
+        )
+        == "sample"
+    )
+
+    # 2) The dataset appears -> warehouse is refreshed from it and re-recorded as real.
+    real = write_sample_workbook(tmp_path / "real.xlsx")  # stand-in for the real workbook
+    monkeypatch.setenv("FORECASTIQ_SOURCE_PATH", str(real))
+    assert bootstrap.ensure_warehouse(Config.load(), with_forecast=False) == "real"
+
+    conn = sqlite3.connect(db)
+    try:
+        assert conn.execute("SELECT data_mode FROM warehouse_meta").fetchone()[0] == "real"
+    finally:
+        conn.close()

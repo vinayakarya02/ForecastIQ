@@ -1,18 +1,20 @@
 """Self-provisioning bootstrap.
 
-Builds the warehouse (ETL + forecasts) in-process **only if it doesn't already exist**,
-so the app and container can start with zero manual steps. Data-source resolution:
+Builds the warehouse (ETL + forecasts) in-process so the app and container start with
+zero manual steps. Data-source resolution:
 
-1. If the real dataset is present at ``source.path`` -> use it ("real").
+1. If the real dataset is present at ``source.path`` -> build from it ("real").
 2. Otherwise generate a synthetic sample workbook and build from that ("sample").
 
-This lets a fresh clone (e.g. Streamlit Community Cloud, where the copyrighted dataset is
-git-ignored and absent) come up as a working demo without committing any dataset.
+Provenance is recorded in a ``warehouse_meta`` table so later runs know whether the
+existing warehouse holds real or sample data. If a warehouse was built from the sample
+but the real dataset later becomes available, it is refreshed from the real data.
 """
 
 from __future__ import annotations
 
 import os
+import sqlite3
 import warnings
 from datetime import datetime
 from pathlib import Path
@@ -21,11 +23,51 @@ from .config import Config
 from .sample import write_sample_workbook
 from .utils.logger import get_logger
 
+_META_TABLE = "warehouse_meta"
+
 
 def _db_path(cfg: Config) -> Path | None:
     url = cfg.db_url
     prefix = "sqlite:///"
     return Path(url[len(prefix) :]) if url.startswith(prefix) else None
+
+
+def _read_meta(db_path: Path) -> str | None:
+    """Recorded data mode of an existing SQLite warehouse ('real'|'sample'), else None."""
+    if not db_path.exists():
+        return None
+    con = sqlite3.connect(db_path)
+    try:
+        row = con.execute(f"SELECT data_mode FROM {_META_TABLE} LIMIT 1").fetchone()
+        return row[0] if row else None
+    except sqlite3.Error:  # empty file or no meta table yet
+        return None
+    finally:
+        con.close()
+
+
+def _write_meta(db_path: Path, mode: str, source_name: str) -> None:
+    con = sqlite3.connect(db_path)
+    try:
+        con.execute(
+            f"CREATE TABLE IF NOT EXISTS {_META_TABLE} "
+            "(data_mode TEXT, source_name TEXT, built_at TEXT)"
+        )
+        con.execute(f"DELETE FROM {_META_TABLE}")
+        con.execute(
+            f"INSERT INTO {_META_TABLE} (data_mode, source_name, built_at) VALUES (?, ?, ?)",
+            (mode, source_name, datetime.now().isoformat(timespec="seconds")),
+        )
+        con.commit()
+    finally:
+        con.close()
+
+
+def record_data_mode(cfg: Config, mode: str, source_name: str) -> None:
+    """Record warehouse provenance (no-op for non-SQLite backends)."""
+    db_path = _db_path(cfg)
+    if db_path is not None and db_path.exists():
+        _write_meta(db_path, mode, source_name)
 
 
 def _run_etl(cfg: Config, logger) -> None:
@@ -83,21 +125,37 @@ def ensure_warehouse(
     with_forecast: bool = True,
     sample_path: str | Path | None = None,
 ) -> str:
-    """Build the warehouse if missing. Returns 'existing', 'real', or 'sample'."""
+    """Build the warehouse if missing. Returns 'existing', 'real', or 'sample'.
+
+    An existing warehouse is reused as-is, except a sample-built one is rebuilt from the
+    real dataset once that dataset becomes available.
+    """
     cfg = cfg or Config.load()
     logger = logger or get_logger()
 
     db_path = _db_path(cfg)
     if db_path is None:  # external (e.g. Postgres) DB: assume it is provisioned
         return "existing"
-    if db_path.exists():
-        return "existing"
 
-    if cfg.source_path.exists():
-        mode = "real"
-        logger.info("Bootstrap: building warehouse from dataset at %s", cfg.source_path.name)
+    real_available = cfg.source_path.exists()
+
+    if db_path.exists():
+        recorded = _read_meta(db_path)
+        if recorded == "sample" and real_available:
+            logger.info(
+                "Real dataset now present — refreshing warehouse from %s.", cfg.source_path.name
+            )
+            # fall through and rebuild from the real dataset
+        elif recorded == "sample":
+            return "sample"  # still no real data: keep the demo running
+        else:
+            return recorded or "existing"  # real-built or legacy warehouse: reuse as-is
+
+    if real_available:
+        mode, source_name = "real", cfg.source_path.name
+        logger.info("Bootstrap: building warehouse from dataset %s", source_name)
     else:
-        mode = "sample"
+        mode, source_name = "sample", "generated sample"
         sample = (
             Path(sample_path)
             if sample_path
@@ -108,6 +166,7 @@ def ensure_warehouse(
         logger.info("Bootstrap: no dataset found — generated synthetic sample data.")
 
     _run_etl(cfg, logger)
+    _write_meta(db_path, mode, source_name)
     if with_forecast:
         _run_forecast(cfg, logger)
     logger.info("Bootstrap complete (%s data).", mode)

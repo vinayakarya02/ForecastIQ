@@ -15,6 +15,7 @@ from pathlib import Path
 # Make `import forecastiq` work when running this script directly (no install needed).
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from forecastiq.bootstrap import record_data_mode  # noqa: E402
 from forecastiq.config import Config  # noqa: E402
 from forecastiq.etl.clean import clean  # noqa: E402
 from forecastiq.etl.extract import extract  # noqa: E402
@@ -61,6 +62,7 @@ def main() -> int:
     tables = transform(cleaned, cfg, logger)
     summary = load(tables, cfg, logger)
     write_quality_log(report, cfg, run_id)
+    record_data_mode(cfg, "real", cfg.source_path.name)
 
     total = sum(summary.values())
     logger.info("=== ETL complete: %d rows across %d tables ===", total, len(summary))
