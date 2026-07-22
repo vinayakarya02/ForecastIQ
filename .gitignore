@@ -41,3 +41,9 @@ Thumbs.db
 
 # Claude Code tooling
 .claude/
+
+# ---- Explicit safety: datasets, generated CSVs, and secrets ----
+*.xls
+*.xlsx
+*.csv
+.streamlit/secrets.toml
